@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8" />
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover" />
-<title>untitled.txt — 문자 사냥 v0.42</title>
+<title>untitled.txt — 문자 사냥 v0.43</title>
 <link rel="icon" href="./icon.svg" type="image/svg+xml">
 <style>
   :root{--paper:#fbfbfa;--ink:#242424}*{box-sizing:border-box}
@@ -115,7 +115,7 @@
     state.revealAt=Array(W*H).fill(0);
     state.player={x:42,y:31,dir:'right',prevX:42,prevY:31,movedAt:0};state.camera={x:42.5*CELL,y:31.5*CELL};
     const spawns=[
-      ['@',45,31,'right',0,999999,'tutorial'],['@',39,28,'left',0,880,'wander'],
+      ['@',45,31,'right',0,999999,'tutorial'],['@',39,28,'left',0,880,'patrol'],
       ['&',46,23,'up',1,760,'hunter'],['@',38,19,'down',1,870,'wander'],
       ['&',52,27,'right',1,810,'ambusher'],['@',58,33,'up',1,900,'wander'],
       ['@',54,21,'left',1,920,'wander'],
@@ -126,6 +126,10 @@
       ['%',50,51,'left',3,780,'ambusher'],['@',22,40,'up',3,900,'wander']
     ];
     state.enemies=spawns.map(([ch,x,y,dir,zone,speed,style],i)=>({id:i+1,ch,x,y,prevX:x,prevY:y,movedAt:0,dir,zone,speed,style,wake:0,seenUntil:0,goal:null,turn:null,attackReadyAt:0,lastStep:0,alive:true}));
+    // Early prey repeat short, observable loops until a genuine clue interrupts.
+    for(const [id,route] of [[2,[[38,28],[38,31],[40,31],[40,28]]],[3,[[46,21],[42,21],[42,25],[46,25]]],[5,[[54,27],[54,31],[50,31],[50,27]]]]){
+      const e=state.enemies.find(e=>e.id===id);e.patrol=route.map(([x,y])=>({x,y}));e.patrolIndex=0;
+    }
     state.kills=0;state.stage=0;state.zoom=1.72;state.unlocks=new Set();state.breached=new Set();state.particles=[];state.flash=0;state.lastPlayerStep=0;state.lastFrame=0;state.held=null;state.absorbEvent=null;state.absorbed=[];state.trail=[];state.ink=0;state.walls=[];state.overview=false;state.writingAt=0;state.combo=0;state.bestCombo=0;state.lastKill=-Infinity;state.comboUntil=0;state.surgeUntil=0;state.notice=[];state.resumeMode='playing';state.deathReason='';state.noise=null;state.edit=null;state.started=false;state.message='';state.messageUntil=Infinity;$('hint').textContent=state.message;$('toast').classList.remove('show');
     reveal(0,true);updateUI();
   }
@@ -229,7 +233,9 @@ const first=!state.unlocks.has(e.ch);state.unlocks.add(e.ch);
   function warnContact(e,now){
     if(!e.attackReadyAt||e.threatX!==state.player.x||e.threatY!==state.player.y){
       e.threatX=state.player.x;e.threatY=state.player.y;e.attackReadyAt=now+850;e.alertUntil=now+1500;e.windup=now;
-      releaseInput();tone(180,.06,'triangle',.02);return true;
+      const held=dirs[state.held];
+      if(held&&state.player.x+held.x===e.x&&state.player.y+held.y===e.y)state.held=null;
+      tone(180,.06,'triangle',.02);return true;
     }
     return now<e.attackReadyAt;
   }
@@ -306,6 +312,12 @@ const first=!state.unlocks.has(e.ch);state.unlocks.add(e.ch);
     if(e.goal&&now<e.seenUntil){
       direction=navigate(e,e.goal);
       if(!direction || (e.goal.x===e.x&&e.goal.y===e.y)){e.goal=null;e.seenUntil=0}
+    }
+    if(!direction&&e.patrol){
+      let target=e.patrol[e.patrolIndex];
+      if(e.x===target.x&&e.y===target.y){e.patrolIndex=(e.patrolIndex+1)%e.patrol.length;target=e.patrol[e.patrolIndex]}
+      direction=navigate(e,target);
+      if(!direction)return; // Wait or take an available detour, never roll a new patrol.
     }
     if(!direction){
       // Wanderers favour forward movement; hunters investigate junctions.
@@ -453,10 +465,11 @@ const first=!state.unlocks.has(e.ch);state.unlocks.add(e.ch);
     surface.addEventListener('pointermove',ev=>{
       if(!drag||drag.id!==ev.pointerId)return;
       ev.preventDefault();const dx=ev.clientX-drag.x,dy=ev.clientY-drag.y;
-      if(Math.hypot(dx,dy)<12){state.held=null;drag.dir=null;return}
+      if(Math.hypot(dx,dy)<12)return;
       let dir=Math.abs(dx)>Math.abs(dy)?(dx>0?'right':'left'):(dy>0?'down':'up');
-      // Hysteresis keeps a nearly diagonal thumb from changing direction repeatedly.
+      // Follow the most recent stroke, rather than an invisible fixed origin.
       if(drag.dir){const old=dirs[drag.dir];if(old.x&&Math.abs(dy)<Math.abs(dx)*1.25&&Math.sign(dx)===old.x)dir=drag.dir;if(old.y&&Math.abs(dx)<Math.abs(dy)*1.25&&Math.sign(dy)===old.y)dir=drag.dir}
+      drag.x=ev.clientX;drag.y=ev.clientY;
       if(dir!==drag.dir){drag.dir=dir;state.held=dir;if(gameNow()-state.lastPlayerStep>=145/playerSpeed())movePlayer(dir)}
       else state.held=dir;
     });
@@ -576,7 +589,7 @@ const first=!state.unlocks.has(e.ch);state.unlocks.add(e.ch);
     requestAnimationFrame(frame)
   }
   // Small deterministic hook for local automated smoke tests.
-  window.__TEXT_HUNTER_TEST__={snapshot:()=>({mode:state.mode,x:state.player.x,y:state.player.y,dir:state.player.dir,kills:state.kills,stage:state.stage,absorb:state.absorbEvent?{...state.absorbEvent}:null,ink:state.ink,walls:state.walls.map(w=>({x:w.x,y:w.y})),overview:state.overview,combo:state.combo,bestCombo:state.bestCombo,absorbed:state.absorbed.map(a=>a.ch),unlocks:[...state.unlocks],held:state.held,visible:state.visible,started:state.started,caret:caretCell(),time:gameNow(),speed:playerSpeed(),enemies:state.enemies.filter(e=>e.alive).map(e=>({id:e.id,ch:e.ch,x:e.x,y:e.y,dir:e.dir,turn:e.turn,zone:e.zone,style:e.style,goal:e.goal,wake:e.wake,attackReadyAt:e.attackReadyAt})),map:state.map.map(r=>r.join(''))}),move:dir=>movePlayer(dir),reset:()=>buildMap()};
+  window.__TEXT_HUNTER_TEST__={snapshot:()=>({mode:state.mode,x:state.player.x,y:state.player.y,dir:state.player.dir,kills:state.kills,stage:state.stage,absorb:state.absorbEvent?{...state.absorbEvent}:null,ink:state.ink,walls:state.walls.map(w=>({x:w.x,y:w.y})),overview:state.overview,combo:state.combo,bestCombo:state.bestCombo,absorbed:state.absorbed.map(a=>a.ch),unlocks:[...state.unlocks],held:state.held,visible:state.visible,started:state.started,caret:caretCell(),time:gameNow(),speed:playerSpeed(),enemies:state.enemies.filter(e=>e.alive).map(e=>({id:e.id,ch:e.ch,x:e.x,y:e.y,dir:e.dir,turn:e.turn,zone:e.zone,style:e.style,goal:e.goal,wake:e.wake,attackReadyAt:e.attackReadyAt,patrol:e.patrol||null,patrolIndex:e.patrolIndex??null})),map:state.map.map(r=>r.join(''))}),move:dir=>movePlayer(dir),reset:()=>buildMap()};
   buildMap();state.mode='playing';updateUI();requestAnimationFrame(frame);
 })();
 </script>

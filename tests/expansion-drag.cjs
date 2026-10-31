@@ -150,7 +150,7 @@ const base=process.env.TEXT_HUNTER_URL||'http://127.0.0.1:8000';
    });
    assert.deepEqual(r,{cornerVisible:true,terrain:true,far:false});
   });
-  await check('first frontal contact stops input, grants 850ms and permits escape',async()=>{
+  await check('first frontal contact stops dangerous movement, grants 850ms and permits escape',async()=>{
    await page.keyboard.press('KeyR');
    const r=await page.evaluate(()=>{
     const {state:s,movePlayer,gameNow,aiStep}=scenario;s.enemies.forEach(e=>e.alive=false);s.started=true;
@@ -171,6 +171,65 @@ const base=process.env.TEXT_HUNTER_URL||'http://127.0.0.1:8000';
     const now=gameNow()+100;movePlayer('right',now);movePlayer('right',now+400);movePlayer('right',now+900);return s.mode;
    });
    assert.equal(r,'dead');
+  });
+  await check('short early patrol repeats without random turns and resumes after a lost clue',async()=>{
+   await page.keyboard.press('KeyR');
+   const r=await page.evaluate(()=>{
+    const {state:s,aiStep,gameNow}=scenario;s.enemies.forEach(e=>e.alive=false);s.trail=[];
+    Object.assign(s.player,{x:60,y:49});const e=s.enemies[1];e.alive=true;e.wake=0;
+    const cycle=()=>{const frames=[];for(let i=0;i<120;i++){aiStep(e,gameNow()+i*900);frames.push([e.x,e.y,e.dir,e.turn]);if(e.x===39&&e.y===28&&e.dir==='left'&&!e.turn&&e.patrolIndex===0)return frames}throw Error('patrol never completes')};
+    const first=cycle(),second=cycle();e.goal={x:46,y:31};e.seenUntil=gameNow()-1;aiStep(e,gameNow());
+    return {first,second,forgot:e.goal===null,returnedTowardRoute:e.x===38&&e.y===28};
+   });
+   assert.deepEqual(r.first,r.second);assert.ok(r.first.length>8);assert.ok(r.forgot&&r.returnedTowardRoute);
+  });
+  await check('actual touch turns vertically after a long horizontal stroke',async()=>{
+   const context=await browser.newContext({viewport:{width:390,height:844},isMobile:true,hasTouch:true});
+   try{
+    const mobile=await context.newPage();mobile.on('pageerror',e=>errors.push(e.message));await mobile.goto(base);
+    const box=await mobile.locator('#board').boundingBox(),session=await context.newCDPSession(mobile),x=box.x+box.width/2,y=box.y+box.height/2;
+    await session.send('Input.dispatchTouchEvent',{type:'touchStart',touchPoints:[{x,y}]});
+    await session.send('Input.dispatchTouchEvent',{type:'touchMove',touchPoints:[{x:x+80,y}]});
+    await mobile.waitForFunction(()=>__TEXT_HUNTER_TEST__.snapshot().held==='right');
+    await session.send('Input.dispatchTouchEvent',{type:'touchMove',touchPoints:[{x:x+80,y:y-40}]});
+    await mobile.waitForFunction(()=>__TEXT_HUNTER_TEST__.snapshot().held==='up',{},{timeout:1500});
+    await session.send('Input.dispatchTouchEvent',{type:'touchEnd',touchPoints:[]});
+    assert.equal(await mobile.evaluate(()=>__TEXT_HUNTER_TEST__.snapshot().held),null);
+   }finally{await context.close()}
+  });
+  await check('actual touch keeps escaping through an AI attack warning without lifting',async()=>{
+   const context=await browser.newContext({viewport:{width:390,height:844},isMobile:true,hasTouch:true});
+   try{
+    const mobile=await context.newPage();mobile.on('pageerror',e=>errors.push(e.message));
+    await mobile.route('**/escape.html',route=>route.fulfill({contentType:'text/html',body:html.replace('  // Small deterministic hook','  window.escape={state,aiStep,gameNow};\n  // Small deterministic hook')}));
+    await mobile.goto(base+'/escape.html');
+    const box=await mobile.locator('#board').boundingBox(),session=await context.newCDPSession(mobile),x=box.x+box.width/2,y=box.y+box.height/2;
+    await session.send('Input.dispatchTouchEvent',{type:'touchStart',touchPoints:[{x,y}]});
+    await session.send('Input.dispatchTouchEvent',{type:'touchMove',touchPoints:[{x:x-35,y}]});
+    await mobile.waitForFunction(()=>__TEXT_HUNTER_TEST__.snapshot().held==='left');
+    const before=await mobile.evaluate(()=>{
+     const {state:s,aiStep,gameNow}=escape;s.enemies.forEach(e=>e.alive=false);const e=s.enemies[1];
+     Object.assign(e,{alive:true,x:s.player.x+1,y:s.player.y,dir:'left',wake:0,goal:null,turn:null,attackReadyAt:0});
+     aiStep(e,gameNow());return {x:s.player.x,held:s.held,warning:e.attackReadyAt>gameNow()};
+    });
+    assert.ok(before.warning);assert.equal(before.held,'left');
+    await session.send('Input.dispatchTouchEvent',{type:'touchMove',touchPoints:[{x:x-55,y}]});
+    await mobile.waitForFunction(start=>__TEXT_HUNTER_TEST__.snapshot().x<start,before.x,{timeout:1000});
+    const after=await mobile.evaluate(()=>__TEXT_HUNTER_TEST__.snapshot());assert.equal(after.mode,'playing');assert.equal(after.held,'left');
+    await session.send('Input.dispatchTouchEvent',{type:'touchEnd',touchPoints:[]});
+   }finally{await context.close()}
+  });
+  await check('a blocked finger can reverse away from contact without a new touch',async()=>{
+   await page.keyboard.press('KeyR');
+   const r=await page.evaluate(()=>{
+    const {state:s,gameNow,movePlayer}=scenario;s.enemies.forEach(e=>e.alive=false);s.started=true;
+    Object.assign(s.enemies[1],{alive:true,x:43,y:31,dir:'left',attackReadyAt:0});
+    const board=document.querySelector('#board');board.setPointerCapture=()=>{};
+    const send=(type,x)=>board.dispatchEvent(new PointerEvent(type,{pointerId:55,clientX:x,clientY:200,button:0,bubbles:true}));
+    send('pointerdown',150);send('pointermove',190);movePlayer('right',gameNow());const blocked=s.held;
+    send('pointermove',160);const reversing=s.held;send('pointerup',160);return {blocked,reversing,released:s.held};
+   });
+   assert.deepEqual(r,{blocked:null,reversing:'left',released:null});
   });
   assert.deepEqual(errors,[]);console.log(`${count} checks passed; no JavaScript page errors.`);
  }finally{await browser.close()}
