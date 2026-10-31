@@ -12,7 +12,7 @@ const base=process.env.TEXT_HUNTER_URL||'http://127.0.0.1:8000';
   const page=await browser.newPage();page.on('pageerror',e=>errors.push(e.message));
   const html=fs.readFileSync(path.join(__dirname,'..','index.html'),'utf8');
   await page.route('**/fixture.html',route=>route.fulfill({contentType:'text/html',body:html.replace('  // Small deterministic hook','  window.scenario={state,movePlayer,aiStep,hearEvent,reveal,gameNow};\n  // Small deterministic hook')}));
-  await page.goto(base+'/fixture.html');await page.click('#btnPrimary');
+  await page.goto(base+'/fixture.html');
   await check('four progressive areas, locked outer network, valid and reachable enemy spawns',async()=>{
    const results=await page.evaluate(()=>{
     const s=__TEXT_HUNTER_TEST__.snapshot();
@@ -109,7 +109,7 @@ const base=process.env.TEXT_HUNTER_URL||'http://127.0.0.1:8000';
   await check('actual touch: deadzone, continuous drag, turn, release and resize on canvas',async()=>{
    const context=await browser.newContext({viewport:{width:390,height:844},isMobile:true,hasTouch:true});
    try{
-    const mobile=await context.newPage();mobile.on('pageerror',e=>errors.push(e.message));await mobile.goto(base);await mobile.tap('#btnPrimary');
+    const mobile=await context.newPage();mobile.on('pageerror',e=>errors.push(e.message));await mobile.goto(base);
     const session=await context.newCDPSession(mobile),box=await mobile.locator('#board').boundingBox();
     const x=box.x+box.width/2,y=box.y+box.height/2;
     const send=(type,points)=>session.send('Input.dispatchTouchEvent',{type,touchPoints:points});
@@ -130,7 +130,7 @@ const base=process.env.TEXT_HUNTER_URL||'http://127.0.0.1:8000';
   await check('holding a drag continues after absorption without lifting the finger',async()=>{
    const context=await browser.newContext({viewport:{width:390,height:844},isMobile:true,hasTouch:true});
    try{
-    const mobile=await context.newPage();mobile.on('pageerror',e=>errors.push(e.message));await mobile.goto(base);await mobile.tap('#btnPrimary');
+    const mobile=await context.newPage();mobile.on('pageerror',e=>errors.push(e.message));await mobile.goto(base);
     const box=await mobile.locator('#dragPad').boundingBox(),session=await context.newCDPSession(mobile);
     const x=box.x+box.width/2,y=box.y+box.height/2;
     await session.send('Input.dispatchTouchEvent',{type:'touchStart',touchPoints:[{x,y}]});

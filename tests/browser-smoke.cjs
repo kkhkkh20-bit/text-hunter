@@ -17,10 +17,19 @@ const base = process.env.TEXT_HUNTER_URL || 'http://127.0.0.1:8000';
     const snapshot = () => page.evaluate(() => window.__TEXT_HUNTER_TEST__.snapshot());
     await check('real page renders and starts', async () => {
       assert.equal((await page.goto(base)).status(), 200);
-      assert.equal((await snapshot()).mode, 'intro');
-      await page.click('#btnPrimary');
+      assert.equal((await snapshot()).mode, 'playing');
+      assert.ok(await page.locator('#scrim').isHidden());
       assert.equal((await snapshot()).mode, 'playing');
       assert.deepEqual(await page.locator('button:visible').allTextContents(), ['일시정지']);
+    });
+    await check('idle notepad waits for first input and keeps the caret in an empty cell', async () => {
+      const initial=await snapshot();await page.waitForTimeout(650);const idle=await snapshot();
+      assert.equal(idle.started,false);assert.deepEqual(idle.enemies,initial.enemies);
+      assert.deepEqual(idle.caret,{x:43,y:31});assert.equal(idle.map[idle.caret.y][idle.caret.x],' ');
+      assert.equal((await page.request.get(base+'/icon.svg')).status(),200);
+      await page.emulateMedia({reducedMotion:'reduce'});
+      await page.screenshot({path:'/tmp/text-hunter-notepad-desktop.png'});
+      await page.emulateMedia({reducedMotion:'no-preference'});
     });
     await check('rear absorption survives pause during animation; growth and record persist', async () => {
       await page.keyboard.press('ArrowRight');
@@ -67,7 +76,7 @@ const base = process.env.TEXT_HUNTER_URL || 'http://127.0.0.1:8000';
       assert.ok(dimensions.content <= dimensions.width);
       for (const value of ['null', '{broken', '{"kills":"bad","combo":null}']) {
         await page.evaluate(v => localStorage.setItem('text-hunter-v030-best', v), value);
-        await page.reload(); await page.click('#btnPrimary');
+        await page.reload();
         assert.equal((await snapshot()).mode, 'playing');
         assert.ok(!(await page.locator('.score').textContent()).includes('NaN'));
       }
@@ -77,7 +86,7 @@ const base = process.env.TEXT_HUNTER_URL || 'http://127.0.0.1:8000';
     await check('real mobile touch holds movement and releases cleanly', async () => {
       const mobile = await browser.newContext({viewport:{width:390,height:844},isMobile:true,hasTouch:true});
       try {
-        const touch = await mobile.newPage(); await touch.goto(base); await touch.tap('#btnPrimary');
+        const touch = await mobile.newPage(); await touch.goto(base);
         const pad=touch.locator('#dragPad');await pad.scrollIntoViewIfNeeded();
         const box=await pad.boundingBox();const cdp=await mobile.newCDPSession(touch);
         const x=box.x+box.width/2,y=box.y+box.height/2;
@@ -99,7 +108,6 @@ const base = process.env.TEXT_HUNTER_URL || 'http://127.0.0.1:8000';
     const html = fs.readFileSync(path.join(__dirname, '..', 'index.html'), 'utf8');
     await fixture.route('**/fixture.html', route => route.fulfill({ contentType: 'text/html', body: html.replace('  // Small deterministic hook', '  window.scenario={state,aiStep,canEat,navigate,updateWalls,movePlayer,gameNow,playerSpeed,updateUI,hasStraightSight,hearEvent,clearSight,reveal};\n  // Small deterministic hook') }));
     await fixture.goto(`${base}/fixture.html`);
-    await fixture.click('#btnPrimary');
     await check('AI announces turn without instantly changing vulnerable rear', async () => {
       const r = await fixture.evaluate(() => {
         const {state:s,aiStep,canEat,gameNow}=scenario;

@@ -3,24 +3,25 @@
 <head>
 <meta charset="utf-8" />
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover" />
-<title>UNTITLED.TXT v0.40 — 문자 사냥</title>
+<title>untitled.txt — 문자 사냥 v0.41</title>
+<link rel="icon" href="./icon.svg" type="image/svg+xml">
 <style>
   :root{--paper:#fbfbfa;--ink:#242424}*{box-sizing:border-box}
   [hidden]{display:none!important}
   html,body{margin:0;background:#eeefed;color:var(--ink);font-family:Consolas,'Courier New',monospace}
   body{padding:24px}button{font:inherit;cursor:pointer;touch-action:manipulation}
   button:focus-visible,canvas:focus-visible{outline:2px solid #245d9c;outline-offset:3px}
-  .layout{max-width:820px;margin:auto}.window{background:var(--paper);border:1px solid #c9c9c5}
-  .titlebar{display:flex;gap:12px;align-items:center;padding:10px 14px;border-bottom:1px solid #ddd;font-size:13px}
+  .layout{max-width:820px;margin:auto}.window{background:#fff;border:1px solid #bfc4c9;box-shadow:0 5px 24px #00000008}
+  .titlebar{background:#f6f7f8;display:flex;gap:12px;align-items:center;padding:10px 14px;border-bottom:1px solid #ddd;font-size:13px}
   .score{margin-left:auto;color:#777;font-size:12px}.menu-btn{min-height:44px;padding:8px 12px;border:1px solid #ddd;background:transparent;color:#555}
-  .board-wrap{padding:12px}.board-shell{position:relative;background:white;border:1px solid #e5e5e2;overflow:hidden}
+  .board-wrap{padding:0 12px 8px}.board-shell{position:relative;background:white;border:0;overflow:hidden}
   #board{width:100%;height:min(62dvh,552px);display:block;touch-action:none;user-select:none}
-  .hint-banner{font-size:13px;line-height:1.6;margin:12px 0;min-height:21px}
+  .hint-banner:empty{display:none}.hint-banner{font-size:13px;line-height:1.6;margin:12px 0;min-height:21px}
   .subtle{font-size:12px;color:#777;line-height:1.6}.play-footer{display:flex;gap:12px;align-items:center;justify-content:space-between;min-height:44px}
   .write-btn,.touch-write{padding:10px 14px;min-height:44px;border:1px solid #333;background:#292929;color:white;font-size:13px}
   button:disabled{background:#eee;color:#999;border-color:#ddd;cursor:default}.keycap{font-size:10px;opacity:.65}
   .controls{display:none;align-items:center;justify-content:center;gap:28px;padding:12px 0}
-  .drag-pad{position:relative;display:grid;place-items:center;flex:1;min-height:110px;background:#f1f1ee;border:1px dashed #bbb;border-radius:12px;touch-action:none;user-select:none;color:#777;font-size:12px;overflow:hidden}
+  .drag-pad{position:relative;display:grid;place-items:center;flex:1;min-height:110px;background:#fff;border:0;border-top:1px solid #eee;border-radius:0;touch-action:none;user-select:none;color:#777;font-size:12px;overflow:hidden}
   .drag-stick{position:absolute;width:42px;height:42px;border:1px solid #777;border-radius:50%;background:#3332;pointer-events:none;transform:translate(-50%,-50%)}
   .touch-write{min-width:100px;min-height:64px}
   .scrim{position:absolute;inset:0;background:rgba(255,255,255,.92);display:grid;place-items:center;z-index:10;padding:20px}
@@ -28,9 +29,11 @@
   .meta{font-size:11px;color:#888}.dialog h2{font-size:24px;font-weight:500;margin:10px 0}.dialog p,.dialog li{font-size:13px;line-height:1.8;color:#555;word-break:keep-all}.dialog ul{padding-left:20px}
   .primary{padding:12px 20px;background:#252525;color:white;border:1px solid #252525;font-size:14px;min-height:44px}
   .toast{position:absolute;bottom:18px;left:50%;transform:translateX(-50%);z-index:11;background:#252525;color:white;padding:10px 14px;font-size:12px;max-width:95%;opacity:0;pointer-events:none;line-height:1.5}.toast.show{opacity:1}
-  @media(max-width:730px){body{padding:8px}.board-wrap{padding:8px}.titlebar{padding:6px 10px}#board{height:clamp(240px,52dvh,480px)}.controls{display:flex;position:sticky;bottom:0;background:var(--paper);padding-bottom:max(12px,env(safe-area-inset-bottom))}#btnWrite{display:none}.play-footer{min-height:0}.hint-banner{font-size:12px}.scrim{position:fixed;padding:18px}.dialog{max-height:calc(100dvh - 36px)}}
+  @media(max-width:730px){body{padding:8px}.board-wrap{padding:8px}.titlebar{padding:6px 10px}#board{height:clamp(240px,52dvh,480px)}.controls{display:flex;position:sticky;bottom:0;background:var(--paper);padding-bottom:max(12px,env(safe-area-inset-bottom))}#btnWrite{display:none}.play-footer{min-height:0}.hint-banner:empty{display:none}.hint-banner{font-size:12px}.scrim{position:fixed;padding:18px}.dialog{max-height:calc(100dvh - 36px)}}
   @media(hover:none){.controls{display:flex}#btnWrite{display:none}}
   @media(max-height:500px) and (pointer:coarse){body{padding:6px}.board-wrap{padding:6px}.titlebar{padding:2px 10px}#board{height:calc(100dvh - 145px)}.hint-banner{margin:6px 0;font-size:11px}.play-footer{min-height:0}.controls{position:fixed;right:12px;bottom:12px;width:auto;padding:0;background:transparent;z-index:4}#dragPad{display:none}.touch-write{min-height:44px}}
+  .file-icon{width:15px;height:19px;border:1px solid #838b91;background:#fff;position:relative;flex-shrink:0}.file-icon:after{content:'';position:absolute;left:3px;right:3px;top:6px;height:1px;background:#a5abb0;box-shadow:0 4px #a5abb0,0 8px #a5abb0}
+  .play-footer{border-top:1px solid #eee;padding-top:6px}.score{font-size:11px}.menu-btn{border:0;padding:8px;color:#777}.subtle{font-size:11px}
 </style>
 
 </head>
@@ -38,14 +41,14 @@
 <main class="layout">
   <div class="window">
     <header class="titlebar">
-      <strong>문자 사냥</strong>
+      <span class="file-icon" aria-hidden="true"></span><span>untitled.txt</span>
       <span class="score"><span id="killCount">0</span> / <span id="totalEnemies">16</span> 흡수</span>
       <button class="menu-btn" id="btnPause" aria-label="일시정지">일시정지</button>
     </header>
     <div class="board-wrap">
       <div class="board-shell" id="boardShell">
         <canvas id="board" width="696" height="552" tabindex="0" aria-label="문자 미로. 방향키로 이동해 적의 뒤를 잡으세요."></canvas>
-        <div id="scrim" class="scrim">
+        <div id="scrim" class="scrim hidden">
           <div class="dialog" role="dialog" aria-labelledby="dialogTitle" aria-modal="true">
             <div class="meta" id="dialogMeta"></div>
             <h2 id="dialogTitle"></h2>
@@ -56,13 +59,13 @@
         </div>
         <div id="toast" class="toast" role="status" aria-live="polite"></div>
       </div>
-      <p id="hint" class="hint-banner" aria-live="polite">적의 열린 쪽을 피해, 뒤에서 다가가세요.</p>
+      <p id="hint" class="hint-banner" aria-live="polite"></p>
       <div class="play-footer">
         <span id="abilities" class="subtle">방향키 / WASD로 이동</span>
         <button class="write-btn" id="btnWrite" hidden>길 막기 · 0 <span class="keycap">SPACE</span></button>
       </div>
       <div class="controls" aria-label="모바일 조작">
-        <div id="dragPad" class="drag-pad" aria-label="원하는 방향으로 드래그해 이동. 손을 떼면 멈춥니다.">밀어서 이동 · 손을 떼면 멈춤<span id="dragStick" class="drag-stick" hidden></span></div>
+        <div id="dragPad" class="drag-pad" aria-label="원하는 방향으로 드래그해 이동. 손을 떼면 멈춥니다.">드래그<span id="dragStick" class="drag-stick" hidden></span></div>
         <button id="btnMobileWrite" class="touch-write" hidden>길 막기 · 0</button>
       </div>
     </div>
@@ -124,7 +127,7 @@
       ['%',56,63,'left',3,780,'ambusher'],['@',4,40,'up',3,900,'wander']
     ];
     state.enemies=spawns.map(([ch,x,y,dir,zone,speed,style],i)=>({id:i+1,ch,x,y,prevX:x,prevY:y,movedAt:0,dir,zone,speed,style,wake:0,seenUntil:0,goal:null,turn:null,lastStep:0,alive:true}));
-    state.kills=0;state.stage=0;state.zoom=1.72;state.unlocks=new Set();state.breached=new Set();state.particles=[];state.flash=0;state.lastPlayerStep=0;state.lastFrame=0;state.held=null;state.absorbEvent=null;state.absorbed=[];state.trail=[];state.ink=0;state.walls=[];state.overview=false;state.writingAt=0;state.combo=0;state.bestCombo=0;state.lastKill=-Infinity;state.comboUntil=0;state.surgeUntil=0;state.notice=[];state.resumeMode='playing';state.deathReason='';state.noise=null;state.message='적의 열린 쪽을 피해, 뒤에서 다가가세요.';state.messageUntil=Infinity;$('hint').textContent=state.message;$('toast').classList.remove('show');
+    state.kills=0;state.stage=0;state.zoom=1.72;state.unlocks=new Set();state.breached=new Set();state.particles=[];state.flash=0;state.lastPlayerStep=0;state.lastFrame=0;state.held=null;state.absorbEvent=null;state.absorbed=[];state.trail=[];state.ink=0;state.walls=[];state.overview=false;state.writingAt=0;state.combo=0;state.bestCombo=0;state.lastKill=-Infinity;state.comboUntil=0;state.surgeUntil=0;state.notice=[];state.resumeMode='playing';state.deathReason='';state.noise=null;state.edit=null;state.started=false;state.message='';state.messageUntil=Infinity;$('hint').textContent=state.message;$('toast').classList.remove('show');
     reveal(0,true);updateUI();
   }
   function clearSight(x,y,tx,ty){
@@ -163,6 +166,7 @@
     if(!state.ink){toast('먹물이 부족해요. 적을 먹으면 +1');return false}
     const d=dirs[state.player.dir],x=state.player.x+d.x,y=state.player.y+d.y;
     if(!valid(x,y)||tile(x,y)!==' '||enemyAt(x,y)){toast('빈 통로에만 + 벽을 쓸 수 있어요.');return false}
+    state.edit={x,y,ch:'+',from:now,typing:true};
     state.ink--;state.walls.push({x,y,until:now+8000,from:now});setTile(x,y,'+');state.writingAt=now;
     // A blocked cell emits into its adjacent corridors; only the event location is shared.
     hearEvent(x,y,now);
@@ -198,12 +202,11 @@ const first=!state.unlocks.has(e.ch);state.unlocks.add(e.ch);
     if(state.combo===3){state.ink=Math.min(3,state.ink+1);toast('3연속! 먹물 보너스 +1',1500)}
 
     state.absorbed.push({ch:e.ch,color:pigment(e.ch)});
-    state.flash=now+230;
-    for(let i=0;i<13;i++){const a=Math.random()*Math.PI*2,s=10+Math.random()*48;state.particles.push({x:e.x*CELL+CELL/2,y:e.y*CELL+CELL/2,vx:Math.cos(a)*s,vy:Math.sin(a)*s,from:now,life:470+Math.random()*250,ch:e.ch})}
+    state.edit={x:e.x,y:e.y,ch:e.ch,from:now};
     tone(340,.12,'triangle',.035);setTimeout(()=>tone(460,.17,'sine',.025),75);
-    if(first&&e.ch==='@'){toast('@ 벽 통과 가능');showMessage('@ 벽으로 이동해 새 길을 열어 보세요.',7000)}
-    else if(first&&e.ch==='&'){toast('& 벽 통과 가능');showMessage('이제 & 벽을 지워 미로의 바깥 둘레를 열 수 있습니다.',7000)}
-    else if(first&&e.ch==='%'){toast('% 벽 통과 가능');showMessage('% 벽 너머 넓은 외곽이 열립니다. 북쪽 끝 출구를 찾아보세요.',7000)}
+    if(first&&e.ch==='@'){toast('@ 벽 통과 가능');showMessage('@',1500)}
+    else if(first&&e.ch==='&'){toast('& 벽 통과 가능');showMessage('&',1500)}
+    else if(first&&e.ch==='%'){toast('% 벽 통과 가능');showMessage('출구 ↑',3500)}
     else toast(e.ch+' 흡수 · '+(state.combo>=2?state.combo+'연속! 빠른 발동':'먹물 +1 · 속도 증가'));
     saveRecord();
     state.mode='playing';
@@ -227,6 +230,7 @@ const first=!state.unlocks.has(e.ch);state.unlocks.add(e.ch);
   function canEat(e,oldX,oldY){const d=dirs[e.dir];return oldX===e.x-d.x&&oldY===e.y-d.y}
   function movePlayer(dirName,now=gameNow()){
     if(state.mode!=='playing')return false;
+    if(!state.started){state.started=true;state.enemies.forEach(e=>{e.wake=now+1500;e.lastStep=now})}
     const d=dirs[dirName];if(!d)return false;
     state.lastPlayerStep=now;
     const p=state.player;const ox=p.x,oy=p.y;p.dir=dirName;
@@ -237,9 +241,9 @@ const first=!state.unlocks.has(e.ch);state.unlocks.add(e.ch);
       const t=tile(x,y);
       if(t==='#'){tone(120,.045,'triangle',.012);return false}
       if(t!==' '&&t!=='+'&&!state.unlocks.has(t)){toast(t+' 적을 흡수해야 '+t+' 벽을 먹을 수 있습니다.',1500);tone(110,.06,'triangle',.017);return false}
-      if(t!==' '){setTile(x,y,' ');tone(250,.095,'square',.024);if(t==='+'){state.walls=state.walls.filter(w=>w.x!==x||w.y!==y);toast('내가 쓴 벽을 지웠습니다.',800)}else if(!state.breached.has(t)){state.breached.add(t);state.stage=Math.max(state.stage,{'@':1,'&':2,'%':3}[t]);state.enemies.forEach(en=>{
+      if(t!==' '){state.edit={x,y,ch:t,from:now};setTile(x,y,' ');tone(250,.095,'square',.024);if(t==='+'){state.walls=state.walls.filter(w=>w.x!==x||w.y!==y);toast('내가 쓴 벽을 지웠습니다.',800)}else if(!state.breached.has(t)){state.breached.add(t);state.stage=Math.max(state.stage,{'@':1,'&':2,'%':3}[t]);state.enemies.forEach(en=>{
         if(en.zone===state.stage){en.wake=now+1600+(en.id%4)*350;en.lastStep=now}
-      });toast(t+' 벽 삭제 · 새로운 미로 개방',2500);showMessage('새로 열린 통로로 적도 들어옵니다. 기존 미로를 활용해 뒤를 잡으세요.',5500);updateUI()}else{toast('벽을 지웠습니다.',650)}}
+      });toast(t+' 벽 삭제 · 새로운 미로 개방',2500);showMessage('',Infinity);updateUI()}else{toast('벽을 지웠습니다.',650)}}
       if(t!==' '&&t!=='+')hearEvent(x,y,now);
       state.trail.push({x:ox,y:oy,from:now,dir:p.dir});
       p.prevX=ox;p.prevY=oy;p.movedAt=now;p.x=x;p.y=y;
@@ -329,7 +333,7 @@ const first=!state.unlocks.has(e.ch);state.unlocks.add(e.ch);
   function updateUI(){
     $('killCount').textContent=String(state.kills);$('totalEnemies').textContent=String(state.enemies.length);
     const unlocked=state.unlocks.has('@');
-    $('abilities').textContent=state.unlocks.size?[...state.unlocks].join(' · ')+' 벽 통과 가능':'키보드로 이동 · 모바일은 밀어서 이동';
+    $('abilities').textContent=state.unlocks.size?[...state.unlocks].join(' · ')+' · UTF-8':'Ln '+(state.player.y+1)+', Col '+(state.player.x+1);
     for(const id of ['btnWrite','btnMobileWrite']){
       const button=$(id);button.hidden=!unlocked;
       button.disabled=!state.ink||state.mode!=='playing';
@@ -459,6 +463,10 @@ const first=!state.unlocks.has(e.ch);state.unlocks.add(e.ch);
     for(const type of ['pointerup','pointercancel','lostpointercapture'])surface.addEventListener(type,ev=>{if(drag?.id===ev.pointerId)releaseInput()});
     surface.addEventListener('contextmenu',ev=>ev.preventDefault());
   }
+  function caretCell(){
+    const p=state.player,d=dirs[p.dir],x=p.x+d.x,y=p.y+d.y;
+    return state.mode==='playing'&&!state.held&&gameNow()-state.lastPlayerStep>300&&isFloor(x,y)&&!enemyAt(x,y)?{x,y}:null;
+  }
   function render(now){
     const p=state.player;
     const bounds=canvas.getBoundingClientRect(),ratio=window.devicePixelRatio||1;
@@ -525,10 +533,18 @@ const first=!state.unlocks.has(e.ch);state.unlocks.add(e.ch);
     const pcx=anim?(p.x+.5)*CELL+(anim.x-anim.ox)*CELL*travel:((p.prevX??p.x)+(p.x-(p.prevX??p.x))*lerp+.5)*CELL;
     const pcy=anim?(p.y+.5)*CELL+(anim.y-anim.oy)*CELL*travel:((p.prevY??p.y)+(p.y-(p.prevY??p.y))*lerp+.5)*CELL;
     drawPlayerEvolution(pcx,pcy,p.dir,now);
-    // The page lights up briefly when a character is absorbed.
-    if(now<state.flash){ctx.fillStyle='rgba(230,235,238,'+(0.16*(state.flash-now)/230)+')';ctx.fillRect(0,0,canvas.width,canvas.height)}
-    state.particles=state.particles.filter(o=>now-o.from<o.life);
-    for(const o of state.particles){const t=(now-o.from)/1000;ctx.globalAlpha=Math.max(0,1-(now-o.from)/o.life);ctx.fillStyle=o.ch==='@'?'#718fac':o.ch==='&'?'#c48b58':'#ad739f';ctx.beginPath();ctx.arc(o.x+o.vx*t,o.y+o.vy*t,2,0,Math.PI*2);ctx.fill()}ctx.globalAlpha=1;
+    // One quiet insertion caret; visual only, never a target or body decoration.
+    const caret=caretCell();
+    if(caret&&(window.matchMedia('(prefers-reduced-motion: reduce)').matches||Math.floor(performance.now()/550)%2===0)){
+      ctx.fillStyle='#555';ctx.fillRect(caret.x*CELL+3,caret.y*CELL+4,1.5,16);
+    }
+    const edit=state.edit;
+    if(edit&&now-edit.from<160){
+      const progress=Math.max(0,(now-edit.from)/160);
+      ctx.save();ctx.textAlign='center';ctx.textBaseline='middle';ctx.font='19px Consolas,monospace';
+      if(!edit.typing){ctx.globalAlpha=1-progress;ctx.fillStyle='#777';ctx.fillText(edit.ch,(edit.x+.5)*CELL,(edit.y+.5)*CELL+1)}
+      ctx.globalAlpha=1;ctx.fillStyle='#444';ctx.fillRect((edit.x+1)*CELL-3,edit.y*CELL+4,1.5,16);ctx.restore();
+    }
     ctx.restore();
   }
   function frame(timestamp){
@@ -539,7 +555,7 @@ const first=!state.unlocks.has(e.ch);state.unlocks.add(e.ch);
       updateWalls(now);
       const interval=145/playerSpeed();
       if(state.held&&now-state.lastPlayerStep>interval)movePlayer(state.held,now);
-      for(const e of state.enemies){if(!e.alive||e.zone>state.stage||now<e.wake)continue;if(now-e.lastStep>=e.speed){e.lastStep=now;aiStep(e,now)}}
+      for(const e of state.enemies){if(!state.started||!e.alive||e.zone>state.stage||now<e.wake)continue;if(now-e.lastStep>=e.speed){e.lastStep=now;aiStep(e,now)}}
     } else if(state.mode==='absorbing'&&state.absorbEvent){
       if(now>=state.absorbEvent.until){
         const target=state.enemies.find(e=>e.id===state.absorbEvent.enemyId&&e.alive);
@@ -550,15 +566,15 @@ const first=!state.unlocks.has(e.ch);state.unlocks.add(e.ch);
       }
     }
     if(state.toastUntil&&now>state.toastUntil){$('toast').classList.remove('show');state.toastUntil=0}
-    if(state.messageUntil!==Infinity&&now>state.messageUntil){state.messageUntil=Infinity;$('hint').textContent='적의 열린 쪽을 피해, 뒤에서 다가가세요.'}
+    if(state.messageUntil!==Infinity&&now>state.messageUntil){state.messageUntil=Infinity;$('hint').textContent=''}
     if(now-state.lastFrame>25||state.mode!=='playing'){
       render(now);state.lastFrame=now
     }
     requestAnimationFrame(frame)
   }
   // Small deterministic hook for local automated smoke tests.
-  window.__TEXT_HUNTER_TEST__={snapshot:()=>({mode:state.mode,x:state.player.x,y:state.player.y,dir:state.player.dir,kills:state.kills,stage:state.stage,absorb:state.absorbEvent?{...state.absorbEvent}:null,ink:state.ink,walls:state.walls.map(w=>({x:w.x,y:w.y})),overview:state.overview,combo:state.combo,bestCombo:state.bestCombo,absorbed:state.absorbed.map(a=>a.ch),unlocks:[...state.unlocks],held:state.held,visible:state.visible,time:gameNow(),speed:playerSpeed(),enemies:state.enemies.filter(e=>e.alive).map(e=>({id:e.id,ch:e.ch,x:e.x,y:e.y,dir:e.dir,turn:e.turn,zone:e.zone,style:e.style,goal:e.goal,wake:e.wake})),map:state.map.map(r=>r.join(''))}),move:dir=>movePlayer(dir),reset:()=>buildMap()};
-  buildMap();openDialog('intro');requestAnimationFrame(frame);
+  window.__TEXT_HUNTER_TEST__={snapshot:()=>({mode:state.mode,x:state.player.x,y:state.player.y,dir:state.player.dir,kills:state.kills,stage:state.stage,absorb:state.absorbEvent?{...state.absorbEvent}:null,ink:state.ink,walls:state.walls.map(w=>({x:w.x,y:w.y})),overview:state.overview,combo:state.combo,bestCombo:state.bestCombo,absorbed:state.absorbed.map(a=>a.ch),unlocks:[...state.unlocks],held:state.held,visible:state.visible,started:state.started,caret:caretCell(),time:gameNow(),speed:playerSpeed(),enemies:state.enemies.filter(e=>e.alive).map(e=>({id:e.id,ch:e.ch,x:e.x,y:e.y,dir:e.dir,turn:e.turn,zone:e.zone,style:e.style,goal:e.goal,wake:e.wake})),map:state.map.map(r=>r.join(''))}),move:dir=>movePlayer(dir),reset:()=>buildMap()};
+  buildMap();state.mode='playing';updateUI();requestAnimationFrame(frame);
 })();
 </script>
 </body>
