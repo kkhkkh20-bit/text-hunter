@@ -19,10 +19,10 @@ const base=process.env.TEXT_HUNTER_URL||'http://127.0.0.1:8000';
     return ['','@','@&','@&%'].map(unlock=>{
      const q=[[42,31]],seen=new Set(['42,31']);
      for(let i=0;i<q.length;i++){const[x,y]=q[i];for(const[dx,dy]of[[1,0],[-1,0],[0,1],[0,-1]]){const nx=x+dx,ny=y+dy,t=s.map[ny]?.[nx],k=nx+','+ny;if(t!==undefined&&(t===' '||unlock.includes(t))&&!seen.has(k)){seen.add(k);q.push([nx,ny])}}}
-     return {cells:seen.size,enemies:s.enemies.filter(e=>seen.has(e.x+','+e.y)).map(e=>e.id),exit:seen.has('42,3'),invalid:s.enemies.filter(e=>s.map[e.y][e.x]!==' ')};
+     return {cells:seen.size,enemies:s.enemies.filter(e=>seen.has(e.x+','+e.y)).map(e=>e.id),exit:seen.has('42,13'),invalid:s.enemies.filter(e=>s.map[e.y][e.x]!==' ')};
     });
    });
-   assert.deepEqual(results.map(r=>r.cells),[43,336,607,1162]);
+   assert.deepEqual(results.map(r=>r.cells),[43,195,341,653]);
    assert.deepEqual(results.map(r=>r.enemies.length),[2,7,12,16]);
    assert.deepEqual(results.map(r=>r.exit),[false,false,false,true]);
    assert.deepEqual(results[3].invalid,[]);
@@ -48,8 +48,8 @@ const base=process.env.TEXT_HUNTER_URL||'http://127.0.0.1:8000';
   await check('A to B to C to A completes a chosen regional loop with real gate erasure',async()=>{
    const r=await page.evaluate(()=>{
     const s=scenario.state;s.enemies.forEach(e=>e.alive=false);s.unlocks.add('@');
-    const steps=[travel(42,14),travel(54,14),travel(66,31),travel(42,31)];
-    return {steps,x:s.player.x,y:s.player.y,gates:[[42,27],[54,14],[47,31]].map(([x,y])=>s.map[y][x]),other:s.map[27][40]};
+    const steps=[travel(42,21),travel(50,21),travel(54,31),travel(42,31)];
+    return {steps,x:s.player.x,y:s.player.y,gates:[[42,27],[50,21],[47,31]].map(([x,y])=>s.map[y][x]),other:s.map[27][40]};
    });
    assert.ok(r.steps.every(n=>n>0));assert.equal(r.x,42);assert.equal(r.y,31);
    assert.deepEqual(r.gates,[' ',' ',' ']);assert.equal(r.other,'@');
@@ -58,8 +58,8 @@ const base=process.env.TEXT_HUNTER_URL||'http://127.0.0.1:8000';
    await page.keyboard.press('KeyR');
    const r=await page.evaluate(()=>{
     const s=scenario.state;s.enemies.forEach(e=>e.alive=false);s.unlocks.add('@');
-    travel(42,14);travel(38,20);travel(40,24);travel(40,28);travel(42,31);
-    return {gates:[s.map[27][42],s.map[27][40]],stillClosed:s.map[14][54],position:[s.player.x,s.player.y]};
+    travel(42,21);travel(40,25);travel(40,28);travel(42,31);
+    return {gates:[s.map[27][42],s.map[27][40]],stillClosed:s.map[21][50],position:[s.player.x,s.player.y]};
    });
    assert.deepEqual(r.gates,[' ',' ']);assert.equal(r.stillClosed,'@');assert.deepEqual(r.position,[42,31]);
   });
@@ -70,7 +70,7 @@ const base=process.env.TEXT_HUNTER_URL||'http://127.0.0.1:8000';
     const e=s.enemies[1];Object.assign(e,{alive:true,x:43,y:31,prevX:43,prevY:31,dir:'left',wake:0,turn:null,style:'hunter'});
     aiStep(e,gameNow()+10); // The player was actually observed before the route.
     if(e.goal.x!==42||e.goal.y!==31)throw Error('no sight memory');
-    travel(42,14);travel(54,14);travel(66,31);travel(44,31);
+    travel(42,21);travel(50,21);travel(54,31);travel(44,31);
     if(!scenario.movePlayer('left'))throw Error('rear approach rejected');
    });
    assert.equal(await page.evaluate(()=>scenario.state.mode),'absorbing');
@@ -102,7 +102,7 @@ const base=process.env.TEXT_HUNTER_URL||'http://127.0.0.1:8000';
    await page.keyboard.press('KeyR');
    const r=await page.evaluate(()=>{
     const s=scenario.state;s.enemies.forEach(e=>e.wake=1e9);s.unlocks=new Set(['@','&','%']);
-    travel(42,14);travel(42,3);return {mode:s.mode,kills:s.kills,stage:s.stage};
+    travel(42,21);travel(42,13);return {mode:s.mode,kills:s.kills,stage:s.stage};
    });
    assert.deepEqual(r,{mode:'won',kills:0,stage:3});
   });
@@ -141,6 +141,36 @@ const base=process.env.TEXT_HUNTER_URL||'http://127.0.0.1:8000';
     await session.send('Input.dispatchTouchEvent',{type:'touchEnd',touchPoints:[]});
     assert.equal(await mobile.evaluate(()=>__TEXT_HUNTER_TEST__.snapshot().held),null);
    }finally{await context.close()}
+  });
+  await check('nearby opponents and corners are readable without line-of-sight guessing',async()=>{
+   await page.keyboard.press('KeyR');
+   const r=await page.evaluate(()=>{
+    const {state:s,reveal}=scenario;Object.assign(s.player,{x:42,y:31});reveal(0);
+    return {cornerVisible:s.visible[28*85+39],terrain:s.revealed[28*85+39],far:s.visible[13*85+34]};
+   });
+   assert.deepEqual(r,{cornerVisible:true,terrain:true,far:false});
+  });
+  await check('first frontal contact stops input, grants 850ms and permits escape',async()=>{
+   await page.keyboard.press('KeyR');
+   const r=await page.evaluate(()=>{
+    const {state:s,movePlayer,gameNow,aiStep}=scenario;s.enemies.forEach(e=>e.alive=false);s.started=true;
+    const e=s.enemies[1];Object.assign(e,{alive:true,x:43,y:31,prevX:43,prevY:31,dir:'left',wake:0,turn:null,attackReadyAt:0});
+    s.held='right';const now=gameNow()+100;movePlayer('right',now);
+    const first={mode:s.mode,x:s.player.x,held:s.held,delay:e.attackReadyAt-now};
+    movePlayer('right',now+400);const protectedMode=s.mode;
+    const escaped=movePlayer('left',now+450);aiStep(e,now+1000);
+    return {first,protectedMode,escaped,mode:s.mode};
+   });
+   assert.ok(Math.abs(r.first.delay-850)<1e-6);assert.deepEqual({mode:r.first.mode,x:r.first.x,held:r.first.held},{mode:'playing',x:42,held:null});assert.equal(r.protectedMode,'playing');assert.ok(r.escaped);assert.equal(r.mode,'playing');
+  });
+  await check('contact warning cannot be renewed into permanent invulnerability',async()=>{
+   await page.keyboard.press('KeyR');
+   const r=await page.evaluate(()=>{
+    const {state:s,movePlayer,gameNow}=scenario;s.enemies.forEach(e=>e.alive=false);s.started=true;
+    const e=s.enemies[1];Object.assign(e,{alive:true,x:43,y:31,dir:'left',wake:0,turn:null,attackReadyAt:0});
+    const now=gameNow()+100;movePlayer('right',now);movePlayer('right',now+400);movePlayer('right',now+900);return s.mode;
+   });
+   assert.equal(r,'dead');
   });
   assert.deepEqual(errors,[]);console.log(`${count} checks passed; no JavaScript page errors.`);
  }finally{await browser.close()}

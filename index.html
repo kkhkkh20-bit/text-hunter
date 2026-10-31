@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8" />
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover" />
-<title>untitled.txt — 문자 사냥 v0.41</title>
+<title>untitled.txt — 문자 사냥 v0.42</title>
 <link rel="icon" href="./icon.svg" type="image/svg+xml">
 <style>
   :root{--paper:#fbfbfa;--ink:#242424}*{box-sizing:border-box}
@@ -92,41 +92,40 @@
   function buildMap(){
     releaseInput();
     state.map=Array.from({length:H},()=>Array(W).fill('#'));
-    // A stays unchanged; other districts connect at independently erasable gates.
-    const room=(x,y)=>{rect(x,y,x+12,y+12,' ');rect(x+2,y+2,x+10,y+10,' ');line(x+6,y,x+6,y+12);line(x,y+6,x+12,y+6);};
-    room(36,8);room(60,25);room(36,44);room(12,25);
-    line(42,20,42,28);line(38,20,38,24);line(38,24,40,24);line(40,24,40,28);
-    line(46,31,60,31);line(48,14,66,14);line(66,14,66,25);
-    line(42,34,42,44);line(24,31,38,31);
-    line(48,50,66,50);line(66,37,66,50);
-    line(18,37,18,50);line(18,50,36,50);
-    line(18,14,36,14);line(18,14,18,25);
-    // % opens a substantial outer network, reconnecting all four districts.
-    rect(4,3,80,63,' ');rect(6,5,78,61,' ');
-    for(const x of [10,28,56,74]){line(x,3,x,5);line(x,61,x,63)}
-    for(const y of [10,22,40,52]){line(4,y,6,y);line(78,y,80,y)}
-    line(42,3,42,8);line(42,56,42,63);line(4,31,12,31);line(72,31,80,31);
-    [[42,6],[42,59],[8,31],[76,31]].forEach(([x,y])=>setTile(x,y,'%'));
-    [[42,39],[32,31],[54,50],[30,50],[30,14]].forEach(([x,y])=>setTile(x,y,'&'));
+    // Compact regional loops: keep choices close enough to read on a phone.
+    const room=(x,y)=>{rect(x,y,x+8,y+8,' ');rect(x+2,y+2,x+6,y+6,' ');line(x+4,y,x+4,y+8);line(x,y+4,x+8,y+4);};
+    room(38,17);room(50,27);room(38,39);room(26,27);
+    line(42,25,42,28);line(40,25,40,28);
+    line(46,31,50,31);line(46,21,54,21);line(54,21,54,27);
+    line(42,34,42,39);line(34,31,38,31);
+    line(46,43,54,43);line(54,35,54,43);
+    line(30,35,30,43);line(30,43,38,43);
+    line(30,21,38,21);line(30,21,30,27);
+    rect(22,13,62,51,' ');rect(24,15,60,49,' ');
+    for(const x of [28,56]){line(x,13,x,15);line(x,49,x,51)}
+    for(const y of [19,43]){line(22,y,24,y);line(60,y,62,y)}
+    line(42,13,42,17);line(42,47,42,51);line(22,31,26,31);line(58,31,62,31);
+    [[42,16],[42,48],[25,31],[59,31]].forEach(([x,y])=>setTile(x,y,'%'));
+    [[42,37],[35,31],[50,43],[34,43],[34,21]].forEach(([x,y])=>setTile(x,y,'&'));
     // Preserve the original 43-tile core, translated to the world centre.
     rect(37,27,47,35,'#');rect(38,28,46,34,' ');
     line(42,28,42,34);line(38,31,46,31);line(40,28,40,31);line(44,31,44,34);
-    [[42,27],[40,27],[47,31],[42,35],[37,31],[54,14]].forEach(([x,y])=>setTile(x,y,'@'));
+    [[42,27],[40,27],[47,31],[42,35],[37,31],[50,21]].forEach(([x,y])=>setTile(x,y,'@'));
     state.revealed=Array(W*H).fill(false);
     state.revealAt=Array(W*H).fill(0);
     state.player={x:42,y:31,dir:'right',prevX:42,prevY:31,movedAt:0};state.camera={x:42.5*CELL,y:31.5*CELL};
     const spawns=[
       ['@',45,31,'right',0,999999,'tutorial'],['@',39,28,'left',0,880,'wander'],
-      ['&',48,18,'up',1,760,'hunter'],['@',36,10,'down',1,870,'wander'],
-      ['&',64,25,'right',1,810,'ambusher'],['@',72,33,'up',1,900,'wander'],
-      ['@',66,14,'left',1,920,'wander'],
-      ['%',36,50,'down',2,750,'ambusher'],['&',48,54,'up',2,850,'hunter'],
-      ['%',12,29,'down',2,790,'ambusher'],['@',24,35,'left',2,900,'wander'],
-      ['&',18,18,'up',2,880,'wander'],
-      ['@',28,3,'right',3,850,'hunter'],['&',78,22,'down',3,830,'hunter'],
-      ['%',56,63,'left',3,780,'ambusher'],['@',4,40,'up',3,900,'wander']
+      ['&',46,23,'up',1,760,'hunter'],['@',38,19,'down',1,870,'wander'],
+      ['&',52,27,'right',1,810,'ambusher'],['@',58,33,'up',1,900,'wander'],
+      ['@',54,21,'left',1,920,'wander'],
+      ['%',38,43,'down',2,750,'ambusher'],['&',46,45,'up',2,850,'hunter'],
+      ['%',26,29,'down',2,790,'ambusher'],['@',34,33,'left',2,900,'wander'],
+      ['&',30,23,'up',2,880,'wander'],
+      ['@',34,13,'right',3,850,'hunter'],['&',60,22,'down',3,830,'hunter'],
+      ['%',50,51,'left',3,780,'ambusher'],['@',22,40,'up',3,900,'wander']
     ];
-    state.enemies=spawns.map(([ch,x,y,dir,zone,speed,style],i)=>({id:i+1,ch,x,y,prevX:x,prevY:y,movedAt:0,dir,zone,speed,style,wake:0,seenUntil:0,goal:null,turn:null,lastStep:0,alive:true}));
+    state.enemies=spawns.map(([ch,x,y,dir,zone,speed,style],i)=>({id:i+1,ch,x,y,prevX:x,prevY:y,movedAt:0,dir,zone,speed,style,wake:0,seenUntil:0,goal:null,turn:null,attackReadyAt:0,lastStep:0,alive:true}));
     state.kills=0;state.stage=0;state.zoom=1.72;state.unlocks=new Set();state.breached=new Set();state.particles=[];state.flash=0;state.lastPlayerStep=0;state.lastFrame=0;state.held=null;state.absorbEvent=null;state.absorbed=[];state.trail=[];state.ink=0;state.walls=[];state.overview=false;state.writingAt=0;state.combo=0;state.bestCombo=0;state.lastKill=-Infinity;state.comboUntil=0;state.surgeUntil=0;state.notice=[];state.resumeMode='playing';state.deathReason='';state.noise=null;state.edit=null;state.started=false;state.message='';state.messageUntil=Infinity;$('hint').textContent=state.message;$('toast').classList.remove('show');
     reveal(0,true);updateUI();
   }
@@ -138,8 +137,8 @@
     state.visible=Array(W*H).fill(false);
     const p=state.player;
     if(initial)for(let y=27;y<=35;y++)for(let x=37;x<=47;x++)state.revealed[idx(x,y)]=true;
-    for(let y=Math.max(0,p.y-10);y<=Math.min(H-1,p.y+10);y++)for(let x=Math.max(0,p.x-10);x<=Math.min(W-1,p.x+10);x++){
-      if(Math.hypot(x-p.x,y-p.y)>10||!clearSight(p.x,p.y,x,y))continue;
+    for(let y=Math.max(0,p.y-8);y<=Math.min(H-1,p.y+8);y++)for(let x=Math.max(0,p.x-8);x<=Math.min(W-1,p.x+8);x++){
+      if(Math.hypot(x-p.x,y-p.y)>8)continue;
       const i=idx(x,y);state.visible[i]=true;
       if(!state.revealed[i]){state.revealed[i]=true;state.revealAt[i]=initial?0:now}
     }
@@ -227,6 +226,13 @@ const first=!state.unlocks.has(e.ch);state.unlocks.add(e.ch);
     showMessage(why,Infinity);
     openDialog('dead');
   }
+  function warnContact(e,now){
+    if(!e.attackReadyAt||e.threatX!==state.player.x||e.threatY!==state.player.y){
+      e.threatX=state.player.x;e.threatY=state.player.y;e.attackReadyAt=now+850;e.alertUntil=now+1500;e.windup=now;
+      releaseInput();tone(180,.06,'triangle',.02);return true;
+    }
+    return now<e.attackReadyAt;
+  }
   function canEat(e,oldX,oldY){const d=dirs[e.dir];return oldX===e.x-d.x&&oldY===e.y-d.y}
   function movePlayer(dirName,now=gameNow()){
     if(state.mode!=='playing')return false;
@@ -236,7 +242,7 @@ const first=!state.unlocks.has(e.ch);state.unlocks.add(e.ch);
     const p=state.player;const ox=p.x,oy=p.y;p.dir=dirName;
     const x=ox+d.x,y=oy+d.y;if(!valid(x,y))return false;
     const e=enemyAt(x,y);
-    if(e){if(canEat(e,ox,oy)){startAbsorb(e,now)}else{die(now,'정면 또는 측면에서 부딪쳤습니다. 반드시 뒤에서 접근하세요.');updateUI();return false}}
+    if(e){if(canEat(e,ox,oy)){startAbsorb(e,now)}else{if(!warnContact(e,now))die(now,'경고한 적의 정면에 다시 닿았습니다.');updateUI();return false}}
     else{
       const t=tile(x,y);
       if(t==='#'){tone(120,.045,'triangle',.012);return false}
@@ -251,7 +257,7 @@ const first=!state.unlocks.has(e.ch);state.unlocks.add(e.ch);
     }
     reveal(now);
     state.lastPlayerStep=now;updateUI();
-    if(state.unlocks.has('%')&&p.x===42&&p.y===3){saveRecord();state.mode='won';releaseInput();openDialog('win');updateUI()}
+    if(state.unlocks.has('%')&&p.x===42&&p.y===13){saveRecord();state.mode='won';releaseInput();openDialog('win');updateUI()}
     return true;
   }
   function hasStraightSight(e){
@@ -276,7 +282,7 @@ const first=!state.unlocks.has(e.ch);state.unlocks.add(e.ch);
   }
   function aiStep(e,now){
     if(state.mode!=='playing'||!e.alive||e.zone>state.stage||now<e.wake||e.style==='tutorial')return;
-    if(e.turn){e.dir=e.turn;e.turn=null;e.windup=0;return;}
+    if(e.turn){e.dir=e.turn;e.turn=null;e.windup=0;e.attackReadyAt=0;return;}
     if(hasStraightSight(e)){
       // Readable personalities: the % creature anticipates two tiles ahead;
       // the & creature pursues the last observed position, never omnisciently.
@@ -317,16 +323,10 @@ const first=!state.unlocks.has(e.ch);state.unlocks.add(e.ch);
     const d=dirs[e.dir],nx=e.x+d.x,ny=e.y+d.y;
     if(!isFloor(nx,ny))return;
     if(nx===state.player.x&&ny===state.player.y){
-      // Seeing the jaw one cell away gives one enemy beat to dodge. Contact remains fatal.
-      if(!e.windup || now-e.windup>e.speed*2.2){
-        e.windup=now;e.alertUntil=now+e.speed*1.4;
-        e.goal={x:state.player.x,y:state.player.y};e.seenUntil=now+e.speed*1.5;
-        return;
-      }
-      if(now-e.windup>=e.speed*.65){die(now,'적의 입이 닿았습니다. 경고 !가 보이면 방향을 바꿔 도망치세요.');return}
-      return;
+      if(warnContact(e,now))return;
+      die(now,'공격 경고 후 적의 입에 닿았습니다.');return;
     }
-    e.windup=0;
+    e.windup=0;e.attackReadyAt=0;
     if(enemyAt(nx,ny))return;
     e.prevX=e.x;e.prevY=e.y;e.movedAt=now;e.x=nx;e.y=ny;
   }
@@ -473,8 +473,8 @@ const first=!state.unlocks.has(e.ch);state.unlocks.add(e.ch);
     const width=Math.max(1,Math.round(bounds.width*ratio)),height=Math.max(1,Math.round(bounds.height*ratio));
     if(canvas.width!==width||canvas.height!==height){canvas.width=width;canvas.height=height}
     ctx.setTransform(ratio,0,0,ratio,0,0);ctx.fillStyle='#ffffff';ctx.fillRect(0,0,bounds.width,bounds.height);
-    const zoom=state.overview?Math.min(bounds.width/(W*CELL),bounds.height/(H*CELL)):1;
-    const targetX=state.overview?W*CELL/2:(p.x+.5)*CELL,targetY=state.overview?H*CELL/2:(p.y+.5)*CELL;
+    const zoom=state.overview?Math.min(bounds.width/(41*CELL),bounds.height/(39*CELL)):1;
+    const targetX=state.overview?42.5*CELL:(p.x+.5)*CELL,targetY=state.overview?32.5*CELL:(p.y+.5)*CELL;
     state.camera.x+=(targetX-state.camera.x)*.24;state.camera.y+=(targetY-state.camera.y)*.24;
     const camera=state.overview?{x:targetX,y:targetY}:state.camera;
     ctx.save();ctx.translate(bounds.width/2,bounds.height/2);ctx.scale(zoom,zoom);ctx.translate(-camera.x,-camera.y);
@@ -484,13 +484,14 @@ const first=!state.unlocks.has(e.ch);state.unlocks.add(e.ch);
     const hasAt=state.unlocks.has('@'),hasAnd=state.unlocks.has('&');
     for(let y=top;y<=bottom;y++)for(let x=left;x<=right;x++){
       const i=idx(x,y),t=tile(x,y);if(!state.revealed[i]||t===' ')continue;
+      if(t==='#'&&!Object.values(dirs).some(d=>tile(x+d.x,y+d.y)!=='#'))continue;
       const alpha=state.revealAt[i]===0?1:Math.min(1,Math.max(0,(now-state.revealAt[i])/350));
-      ctx.globalAlpha=alpha*(state.visible[i]?1:.30);
+      ctx.globalAlpha=alpha*(state.visible[i]?1:.48);
       ctx.fillStyle=t==='#'?'#474747':t==='@'?(hasAt?'#7795b3':'#989898'):t==='&'?(hasAnd?'#b79672':'#989898'):'#888';
       ctx.fillText(t,x*CELL+CELL/2,y*CELL+CELL/2+1);
     }
     ctx.globalAlpha=1;
-    if(state.revealed[idx(42,3)]){ctx.font='12px monospace';ctx.fillStyle='#333';ctx.fillText('출구',42.5*CELL,3.5*CELL-14)}
+    if(state.revealed[idx(42,13)]){ctx.font='12px monospace';ctx.fillStyle='#333';ctx.fillText('출구',42.5*CELL,13.5*CELL-14)}
     // Breathe on the next unlocked gate so the player spots where to explore.
     const gate=state.unlocks.has('%')?'%':state.unlocks.has('&')?'&':state.unlocks.has('@')?'@':null;
     if(gate){
@@ -522,6 +523,8 @@ const first=!state.unlocks.has(e.ch);state.unlocks.add(e.ch);
       const cx=((e.prevX??e.x)+(e.x-(e.prevX??e.x))*ease+.5)*CELL;
       const cy=((e.prevY??e.y)+(e.y-(e.prevY??e.y))*ease+.5)*CELL;
       drawEnemyGlyph(cx,cy,e,now);
+      if(e.attackReadyAt&&now<e.attackReadyAt+700){ctx.strokeStyle='#ac4a43';ctx.lineWidth=1.5;ctx.beginPath();ctx.arc(cx,cy,14,0,Math.PI*2);ctx.stroke()}
+
       if(e.turn){ctx.font='bold 14px monospace';ctx.fillStyle='#775f39';ctx.fillText({up:'↑',right:'→',down:'↓',left:'←'}[e.turn],cx,cy-17)}
       if(e.alertUntil>now){ctx.font='bold 13px Consolas,monospace';ctx.fillStyle='#a74c44';ctx.fillText('!',cx+13,cy-12)}
       else if(e.goal&&e.seenUntil>now){ctx.font='12px Consolas,monospace';ctx.fillStyle='#708291';ctx.fillText('?',cx+13,cy-12)}
@@ -573,7 +576,7 @@ const first=!state.unlocks.has(e.ch);state.unlocks.add(e.ch);
     requestAnimationFrame(frame)
   }
   // Small deterministic hook for local automated smoke tests.
-  window.__TEXT_HUNTER_TEST__={snapshot:()=>({mode:state.mode,x:state.player.x,y:state.player.y,dir:state.player.dir,kills:state.kills,stage:state.stage,absorb:state.absorbEvent?{...state.absorbEvent}:null,ink:state.ink,walls:state.walls.map(w=>({x:w.x,y:w.y})),overview:state.overview,combo:state.combo,bestCombo:state.bestCombo,absorbed:state.absorbed.map(a=>a.ch),unlocks:[...state.unlocks],held:state.held,visible:state.visible,started:state.started,caret:caretCell(),time:gameNow(),speed:playerSpeed(),enemies:state.enemies.filter(e=>e.alive).map(e=>({id:e.id,ch:e.ch,x:e.x,y:e.y,dir:e.dir,turn:e.turn,zone:e.zone,style:e.style,goal:e.goal,wake:e.wake})),map:state.map.map(r=>r.join(''))}),move:dir=>movePlayer(dir),reset:()=>buildMap()};
+  window.__TEXT_HUNTER_TEST__={snapshot:()=>({mode:state.mode,x:state.player.x,y:state.player.y,dir:state.player.dir,kills:state.kills,stage:state.stage,absorb:state.absorbEvent?{...state.absorbEvent}:null,ink:state.ink,walls:state.walls.map(w=>({x:w.x,y:w.y})),overview:state.overview,combo:state.combo,bestCombo:state.bestCombo,absorbed:state.absorbed.map(a=>a.ch),unlocks:[...state.unlocks],held:state.held,visible:state.visible,started:state.started,caret:caretCell(),time:gameNow(),speed:playerSpeed(),enemies:state.enemies.filter(e=>e.alive).map(e=>({id:e.id,ch:e.ch,x:e.x,y:e.y,dir:e.dir,turn:e.turn,zone:e.zone,style:e.style,goal:e.goal,wake:e.wake,attackReadyAt:e.attackReadyAt})),map:state.map.map(r=>r.join(''))}),move:dir=>movePlayer(dir),reset:()=>buildMap()};
   buildMap();state.mode='playing';updateUI();requestAnimationFrame(frame);
 })();
 </script>

@@ -127,7 +127,7 @@ const base = process.env.TEXT_HUNTER_URL || 'http://127.0.0.1:8000';
         const now=gameNow()+100;aiStep(e,now);const warned=s.mode==='playing'&&e.alertUntil>now;
         aiStep(e,now+e.speed);return {warned,mode:s.mode,body:document.querySelector('#dialogBody').textContent};
       });
-      assert.ok(r.warned);assert.equal(r.mode,'dead');assert.ok(r.body.includes('경고 !'));
+      assert.ok(r.warned);assert.equal(r.mode,'dead');assert.ok(r.body.includes('경고'));
     });
     await check('temporary wall changes AI route and expiry restores it', async () => {
       const r=await fixture.evaluate(()=>{
