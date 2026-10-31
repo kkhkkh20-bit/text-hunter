@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8" />
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover" />
-<title>UNTITLED.TXT v0.30 — 문자 사냥</title>
+<title>UNTITLED.TXT v0.31 — 문자 사냥</title>
 <style>
   :root{--ink:#242424;--faded:#848484;--line:#dededb;--paper:#fbfbfa;--bg:#eeefed;--accent:#252525}
   *{box-sizing:border-box}html,body{margin:0;min-height:100%;font-family:Consolas,'Courier New',monospace;color:var(--ink);background:var(--bg)}
@@ -68,7 +68,7 @@
   .dir{border:1px solid #c0c0bc;color:#333;background:#f8f8f6;font-size:21px;border-radius:4px;touch-action:none;user-select:none}.dir:active{background:#deded9}
   .helptext{font-size:12px;line-height:1.7;color:#777;max-width:180px}
   .touch-actions{display:flex;flex-direction:column;align-items:center;gap:6px}
-  .touch-write{width:94px;min-height:61px;font-size:15px;background:#292929;color:#fff;border:1px solid #333;border-radius:4px}
+  .touch-write{touch-action:manipulation;width:94px;min-height:61px;font-size:15px;background:#292929;color:#fff;border:1px solid #333;border-radius:4px}
   .touch-write:disabled{color:#999;border-color:#ddd;background:#efefec}
   .touch-tip{max-width:105px;font-size:10px;color:#777;line-height:1.4;text-align:center}
   .scrim{position:absolute;inset:0;background:rgba(255,255,255,.86);display:flex;align-items:center;justify-content:center;z-index:3;padding:20px}
@@ -82,6 +82,7 @@
   @media(max-width:970px){.main{grid-template-columns:minmax(0,1fr) 210px}.sidebar{padding:16px 13px}.board-wrap{padding:10px}}
   @media(max-width:730px){.board-wrap{border-bottom:1px solid var(--line)}.controls{border-top:0;padding:11px 4px 12px}.helptext{display:none}.scrim{position:fixed;inset:0;z-index:50;padding:18px}.dialog{max-height:calc(100dvh - 36px);overflow:auto}body{padding:8px}.eyebrow{margin-bottom:8px}.main{display:flex;flex-direction:column}.board-wrap{border-right:0;border-bottom:1px solid var(--line);padding:8px}.sidebar{display:grid;grid-template-columns:1fr 1fr;gap:13px;padding:13px}.sidebar .bottom{grid-column:span 2;margin:0}.sidebar .progress{border-top:0;padding-top:0}.controls{display:flex}.hint-banner{font-size:11px;min-height:35px}.titlebar{height:36px}.dialog{padding:20px}.scrim{padding:10px}.statusbar{font-size:10px}}
   @media(max-width:390px){.sidebar{grid-template-columns:1fr 1fr}.dpad{grid-template-columns:repeat(3,47px);grid-template-rows:repeat(2,40px)}.helptext{font-size:11px}}
+  @media(max-width:730px){.controls{position:sticky;bottom:0;z-index:5;background:var(--paper);padding-bottom:max(12px,env(safe-area-inset-bottom));box-shadow:0 -2px 6px #0000000d}.dir{min-height:44px}.dpad{grid-template-rows:repeat(2,44px)}}
   @media(hover:none){.controls{display:flex}}
   @media(prefers-reduced-motion:reduce){.toast{transition:none}}
 </style>
@@ -106,7 +107,7 @@
           <canvas id="board" width="696" height="552" tabindex="0" aria-label="문자 미로 게임. 방향키 또는 WASD로 이동합니다."></canvas>
           <div id="scrim" class="scrim">
             <div class="dialog" id="dialog" role="dialog" aria-labelledby="dialogTitle">
-              <div class="meta" id="dialogMeta">UNTITLED.TXT / V0.30</div>
+              <div class="meta" id="dialogMeta">UNTITLED.TXT / V0.31</div>
               <h2 id="dialogTitle">문자 하나로 시작한다.</h2>
               <p id="dialogBody">방향키로 움직여 적의 뒤를 잡으세요. 적의 정면에서 만나면 바로 잡아먹힙니다.</p>
               <ul id="dialogList"><li>적 <code>@</code>의 뒤를 잡으면 <code>@</code> 벽을 지울 수 있습니다.</li><li>직접 뚫은 통로는 적도 이용합니다. 바깥으로 갈수록 적이 많아집니다.</li><li>새 문자를 흡수할수록 같은 세계가 바깥으로 확장됩니다.</li></ul>
@@ -145,7 +146,7 @@
           <div class="section-tag">ABSORBED / 획득 문자</div>
           <div class="milestone" id="milestoneAt"><span class="token">@</span><span class="description">@ 벽 지우기</span><span class="state">잠김</span></div>
           <div class="milestone" id="milestoneAnd"><span class="token">&amp;</span><span class="description">&amp; 벽 지우기</span><span class="state">잠김</span></div>
-          <div class="milestone" id="milestonePct"><span class="token">%</span><span class="description">마지막 문자</span><span class="state">미획득</span></div>
+          <div class="milestone" id="milestonePct"><span class="token">%</span><span class="description">% 지름길 지우기</span><span class="state">미획득</span></div>
         </div>
         <div class="evolve-panel">
           <div class="section-tag">EVOLUTION / 내 도형 성장</div>
@@ -171,7 +172,7 @@
           <div class="tactics-row"><span class="tactics-type">@</span><span>순찰 · 교차로에서 방향 전환</span></div>
           <div class="tactics-row"><span class="tactics-type">&amp;</span><span>추격 · 발견한 위치까지 접근</span></div>
           <div class="tactics-row"><span class="tactics-type">%</span><span>매복 · 가는 방향을 앞질러 감</span></div>
-          <div class="subtle">? : 수색 중　! : 발견 · 공격 준비</div>
+          <div class="subtle">? : 수색　! : 공격 경고<br>작은 □ : 적의 뒤　화살표 : 다음 회전</div>
         </div>
         <details class="bottom">
           <summary class="section-tag" style="cursor:pointer;color:#555;margin-bottom:9px">RULES / 규칙 펼쳐보기</summary>
@@ -184,9 +185,9 @@
         </details>
       </aside>
     </div>
-    <div class="statusbar"><span id="statusCoords">Ln 12, Col 15</span><span id="statusActivity">삭제 ERASE → 기록 WRITE</span><span>UTF-8 · BUILD 0.30</span></div>
+    <div class="statusbar"><span id="statusCoords">Ln 12, Col 15</span><span id="statusActivity">삭제 ERASE → 기록 WRITE</span><span>UTF-8 · BUILD 0.31</span></div>
   </div>
-  <div class="credit">© PROTOTYPE 0.30 — 지우고, 쓰고, 사냥한다</div>
+  <div class="credit">© PROTOTYPE 0.31 — 지우고, 쓰고, 사냥한다</div>
 </div>
 <script>
 (()=>{'use strict';
@@ -196,6 +197,9 @@
   const $=id=>document.getElementById(id);
   const state={map:[],revealed:[],revealAt:[],player:null,enemies:[],unlocks:new Set(),breached:new Set(),kills:0,stage:0,mode:'intro',held:null,lastPlayerStep:0,lastFrame:0,toastUntil:0,toastText:'',message:'',messageUntil:0,mute:true,particles:[],flash:0,absorbEvent:null,absorbed:[],trail:[],skin:'core',ink:0,walls:[],overview:false,writingAt:0,combo:0,bestCombo:0,lastKill:-Infinity,comboUntil:0,surgeUntil:0,notice:[]};
   let audio=null;
+  let gameTime=0,lastTick=performance.now();
+  const gameNow=()=>gameTime;
+  const playerSpeed=()=>Math.min(1.4,1+state.kills*.07)+(gameNow()<state.surgeUntil?.15:0);
   const idx=(x,y)=>y*W+x;
   const valid=(x,y)=>x>=0&&x<W&&y>=0&&y<H;
   const tile=(x,y)=>valid(x,y)?state.map[y][x]:'#';
@@ -250,8 +254,8 @@
       ['&',24,18,'left',2,900,'wander'],
       ['@',14,20,'up',2,850,'hunter']
     ];
-    state.enemies=spawns.map(([ch,x,y,dir,zone,speed,style],i)=>({id:i+1,ch,x,y,prevX:x,prevY:y,movedAt:0,dir,zone,speed,style,wake:0,seenUntil:0,goal:null,lastStep:0,alive:true}));
-    state.kills=0;state.stage=0;state.zoom=1.72;state.unlocks=new Set();state.breached=new Set();state.particles=[];state.flash=0;state.lastPlayerStep=0;state.lastFrame=0;state.held=null;state.absorbEvent=null;state.absorbed=[];state.trail=[];state.ink=0;state.walls=[];state.overview=false;state.writingAt=0;state.combo=0;state.bestCombo=0;state.lastKill=-Infinity;state.comboUntil=0;state.surgeUntil=0;state.notice=[];$('btnMap').classList.remove('active');$('btnMap').textContent='전체 지도 [TAB]';state.message='@ 적의 뒤에서 접근하세요. 입이 벌어진 방향이 공격 방향입니다.';state.messageUntil=Infinity;
+    state.enemies=spawns.map(([ch,x,y,dir,zone,speed,style],i)=>({id:i+1,ch,x,y,prevX:x,prevY:y,movedAt:0,dir,zone,speed,style,wake:0,seenUntil:0,goal:null,turn:null,lastStep:0,alive:true}));
+    state.kills=0;state.stage=0;state.zoom=1.72;state.unlocks=new Set();state.breached=new Set();state.particles=[];state.flash=0;state.lastPlayerStep=0;state.lastFrame=0;state.held=null;state.absorbEvent=null;state.absorbed=[];state.trail=[];state.ink=0;state.walls=[];state.overview=false;state.writingAt=0;state.combo=0;state.bestCombo=0;state.lastKill=-Infinity;state.comboUntil=0;state.surgeUntil=0;state.notice=[];state.resumeMode='playing';state.deathReason='';$('btnMap').classList.remove('active');$('btnMap').textContent='전체 지도 [TAB]';state.message='@ 적의 뒤에서 접근하세요. 입이 벌어진 방향이 공격 방향입니다.';state.messageUntil=Infinity;$('hint').textContent=state.message;$('toast').classList.remove('show');
     reveal(0,true);updateUI();
   }
   function reveal(now,initial=false){
@@ -267,14 +271,14 @@
       }
     }
   }
-  function showMessage(message,ms=4000){state.message=message;state.messageUntil=ms===Infinity?Infinity:performance.now()+ms;$('hint').textContent=message}
-  function toast(message,ms=2050){state.toastText=message;state.toastUntil=performance.now()+ms;$('toast').textContent=message;$('toast').classList.add('show')}
+  function showMessage(message,ms=4000){state.message=message;state.messageUntil=ms===Infinity?Infinity:gameNow()+ms;$('hint').textContent=message}
+  function toast(message,ms=2050){state.toastText=message;state.toastUntil=gameNow()+ms;$('toast').textContent=message;$('toast').classList.add('show')}
   function setSound(on){state.mute=!on;$('btnSound').textContent=on?'소리 끄기':'소리 켜기'}
   function tone(freq=260,duration=.07,type='sine',volume=.025){if(state.mute)return;try{audio??=new (window.AudioContext||window.webkitAudioContext)();if(audio.state==='suspended')audio.resume();const o=audio.createOscillator(),g=audio.createGain();o.type=type;o.frequency.value=freq;const t=audio.currentTime;g.gain.setValueAtTime(volume,t);g.gain.exponentialRampToValueAtTime(.0001,t+duration);o.connect(g);g.connect(audio.destination);o.start(t);o.stop(t+duration)}catch(e){}}
   function tickSound(){tone(170,.025,'triangle',.009)}
   function isFloor(x,y){return tile(x,y)===' '}
   function enemyAt(x,y){return state.enemies.find(e=>e.alive&&e.x===x&&e.y===y)}
-  function writeWall(now=performance.now()){
+  function writeWall(now=gameNow()){
     if(state.mode!=='playing')return false;
     if(!state.unlocks.has('@')){toast('첫 @를 흡수해야 문자를 쓸 수 있어요.');return false}
     if(!state.ink){toast('먹물이 부족해요. 적을 먹으면 +1');return false}
@@ -297,13 +301,13 @@
   }
   function pigment(ch){return {'@':'#5D94B7','&':'#C48B60','%':'#9C76B4'}[ch]||'#555'}
   function saveRecord(){
-    try{let old=JSON.parse(localStorage.getItem('text-hunter-v030-best')||'{}');
+    try{const old=loadRecord();
       const next={kills:Math.max(old.kills||0,state.kills),combo:Math.max(old.combo||0,state.bestCombo)};
       localStorage.setItem('text-hunter-v030-best',JSON.stringify(next));
     }catch(err){} // local-file privacy settings may block storage
   }
   function loadRecord(){
-    try{return JSON.parse(localStorage.getItem('text-hunter-v030-best')||'{}')}
+    try{const r=JSON.parse(localStorage.getItem('text-hunter-v030-best')||'{}');return {kills:Number.isFinite(r?.kills)?Math.max(0,r.kills):0,combo:Number.isFinite(r?.combo)?Math.max(0,r.combo):0}}
     catch(err){return {}}
   }
   function finalizeAbsorb(e,now){
@@ -322,11 +326,12 @@ const first=!state.unlocks.has(e.ch);state.unlocks.add(e.ch);
     tone(340,.12,'triangle',.035);setTimeout(()=>tone(460,.17,'sine',.025),75);
     if(first&&e.ch==='@'){toast('@ 흡수! 이제 @ 벽을 먹을 수 있습니다.');showMessage('중앙 둘레의 @ 벽으로 이동해 길을 직접 뚫어 보세요.',7000)}
     else if(first&&e.ch==='&'){toast('& 흡수! 더 바깥쪽으로 갈 수 있습니다.');showMessage('이제 & 벽을 지워 미로의 바깥 둘레를 열 수 있습니다.',7000)}
-    else if(first&&e.ch==='%'){toast('% 흡수! 문자 수집 완료.');showMessage('새로운 능력을 얻었습니다. 남은 적도 사냥해 보세요.',7000)}
+    else if(first&&e.ch==='%'){toast('% 흡수! 문자 수집 완료.');showMessage('% 벽이 빛납니다. 위아래 외곽 지름길을 뚫어 남은 적의 뒤로 돌아가세요.',7000)}
     else toast(e.ch+' 흡수 · '+(state.combo>=2?state.combo+'연속! 빠른 발동':'먹물 +1 · 속도 증가'));
-    updateUI();
-    if(state.kills===state.enemies.length){saveRecord();state.mode='won';state.held=null;openDialog('win')}
+    saveRecord();
+    if(state.kills===state.enemies.length){state.mode='won';state.held=null;openDialog('win')}
     else state.mode='playing';
+    updateUI();
   }
   function startAbsorb(e,now){
     if(state.absorbEvent)return;
@@ -337,13 +342,13 @@ const first=!state.unlocks.has(e.ch);state.unlocks.add(e.ch);
   }
   function die(now,why='정면에서 잡혔습니다.'){
     if(state.mode!=='playing')return;
-    saveRecord();state.mode='dead';state.held=null;state.flash=now+450;
+    state.deathReason=why;saveRecord();state.mode='dead';state.held=null;state.flash=now+450;
     tone(150,.28,'sawtooth',.048);
     showMessage(why,Infinity);
     openDialog('dead');
   }
   function canEat(e,oldX,oldY){const d=dirs[e.dir];return oldX===e.x-d.x&&oldY===e.y-d.y}
-  function movePlayer(dirName,now=performance.now()){
+  function movePlayer(dirName,now=gameNow()){
     if(state.mode!=='playing')return false;
     const d=dirs[dirName];if(!d)return false;
     state.lastPlayerStep=now;
@@ -356,7 +361,7 @@ const first=!state.unlocks.has(e.ch);state.unlocks.add(e.ch);
       if(t==='#'){tone(120,.045,'triangle',.012);return false}
       if(t!==' '&&t!=='+'&&!state.unlocks.has(t)){toast(t+' 적을 흡수해야 '+t+' 벽을 먹을 수 있습니다.',1500);tone(110,.06,'triangle',.017);return false}
       if(t!==' '){setTile(x,y,' ');tone(250,.095,'square',.024);if(t==='+'){state.walls=state.walls.filter(w=>w.x!==x||w.y!==y);toast('내가 쓴 벽을 지웠습니다.',800)}else if(!state.breached.has(t)){state.breached.add(t);state.stage=Math.max(state.stage,t==='@'?1:2);state.enemies.forEach(en=>{
-        if(en.zone<=state.stage&&!en.wake){
+        if(en.zone===state.stage){
           en.wake=now+1100+(en.id%4)*450;
           if(en.zone===state.stage&&en.style!=='tutorial'&&Math.abs(en.x-x)+Math.abs(en.y-y)<7){
             en.goal={x,y};en.seenUntil=now+5200;en.searchUntil=now+5200;
@@ -392,7 +397,7 @@ const first=!state.unlocks.has(e.ch);state.unlocks.add(e.ch);
   }
   function aiStep(e,now){
     if(state.mode!=='playing'||!e.alive||e.zone>state.stage||now<e.wake||e.style==='tutorial')return;
-    if(Math.abs(e.x-state.player.x)+Math.abs(e.y-state.player.y)>12)return;
+    if(e.turn){e.dir=e.turn;e.turn=null;e.windup=0;return;}
     if(hasStraightSight(e)){
       // Readable personalities: the % creature anticipates two tiles ahead;
       // the & creature pursues the last observed position, never omnisciently.
@@ -400,12 +405,13 @@ const first=!state.unlocks.has(e.ch);state.unlocks.add(e.ch);
       if(e.style==='ambusher'){
         const d=dirs[state.player.dir];
         for(let n=2;n>=1;n--){const ax=state.player.x+d.x*n,ay=state.player.y+d.y*n;
+          if(!isFloor(state.player.x+d.x,state.player.y+d.y))break;
           if(isFloor(ax,ay)){goal={x:ax,y:ay};break}}
       }
       e.goal=goal;e.seenUntil=now+3200;e.alertUntil=now+1100;
     }else if((!e.goal||now>=e.seenUntil)&&e.style!=='tutorial'){
       // A recent moving trace is a clue, not the player's real-time position.
-      const nearby=state.trail.slice().reverse().find(t=>now-t.from<1950&&Math.abs(t.x-e.x)+Math.abs(t.y-e.y)<=4&&isFloor(t.x,t.y));
+      const nearby=state.trail.slice().reverse().find(t=>now-t.from<1950&&Math.abs(t.x-e.x)+Math.abs(t.y-e.y)<=4&&isFloor(t.x,t.y)&&navigate(e,t)!==null);
       if(nearby){e.goal={x:nearby.x,y:nearby.y};e.seenUntil=now+1600;e.searchUntil=now+1600}
     }
     const choices=names.filter(name=>{const d=dirs[name];const x=e.x+d.x,y=e.y+d.y;return isFloor(x,y)&&!enemyAt(x,y)});
@@ -427,7 +433,7 @@ const first=!state.unlocks.has(e.ch);state.unlocks.add(e.ch);
       }
     }
     if(!direction)return;
-    if(e.dir!==direction){e.dir=direction;return} // A turn is visibly telegraphed for one full AI beat.
+    if(e.dir!==direction){e.turn=direction;e.windup=0;return} // Keep the current vulnerable rear until the announced turn commits.
     const d=dirs[e.dir],nx=e.x+d.x,ny=e.y+d.y;
     if(!isFloor(nx,ny))return;
     if(nx===state.player.x&&ny===state.player.y){
@@ -446,7 +452,7 @@ const first=!state.unlocks.has(e.ch);state.unlocks.add(e.ch);
   }
   function updateUI(){
     $('killCount').textContent=String(state.kills);$('totalEnemies').textContent=String(state.enemies.length);
-    $('levelInfo').textContent='LV.'+String(1+state.unlocks.size).padStart(2,'0')+' · 이동속도 '+Math.round(Math.min(140,100+state.kills*7)+(performance.now()<state.surgeUntil?15:0))+'%';
+    $('levelInfo').textContent='LV.'+String(1+state.unlocks.size).padStart(2,'0')+' · 이동속도 '+Math.round(playerSpeed()*100)+'%';
     $('zoneInfo').textContent=['중앙 미로','첫 번째 외곽 개방','두 번째 외곽 개방'][state.stage];
     $('worldLabel').textContent='WORLD 0'+(state.stage+1)+' · '+(state.unlocks.size===0?'MONOCHROME':'ABSORB / '+[...state.unlocks].join(' '));
     $('statusCoords').textContent='Ln '+(state.player.y+1)+', Col '+(state.player.x+1);
@@ -471,9 +477,9 @@ const first=!state.unlocks.has(e.ch);state.unlocks.add(e.ch);
   }
   function openDialog(type){
     const content={
-      intro:{meta:'UNTITLED.TXT / V0.30',title:'문자 하나로 시작한다.',body:'방향키로 움직여 적의 뒤를 잡으세요. 입이 벌어진 방향이 공격 방향입니다. 적의 등 뒤에서 먹으면 색과 능력이 내 몸에 쌓입니다.',list:['첫 번째 @의 열린 꼬리는 오른쪽을 향합니다. 왼쪽에서 다가가면 흡수할 수 있어요.','@를 잡으면 @ 벽을 먹어 길을 만들 수 있습니다.','@를 먹으면 SPACE로 + 벽을 쓸 수 있습니다. 연속 사냥하면 잠깐 더 빨라져요.'],primary:'게임 시작 →'},
-      help:{meta:'HOW TO PLAY',title:'사냥 · 흡수 · 개척',body:'방향키 또는 WASD로 움직입니다. 적의 뒤쪽 한 칸에서 적에게 들어가면 흡수합니다. 입이 벌어진 쪽이나 옆에서 충돌하면 패배합니다.',list:['캐릭터의 열린 쪽 또는 글자 꼬리 방향이 그 캐릭터의 정면입니다.','@ → @ 벽, & → & 벽. 문자마다 새로운 길이 열립니다.','@를 먹은 뒤 SPACE로 앞쪽 빈 칸에 + 벽 쓰기. 8초 후 사라지고 먹물 1개를 소비합니다.','# 벽은 영원히 남으며, %를 먹으면 외곽 지름길을 열 수 있습니다.','R 재시작 · P 일시정지 · TAB 전체 지도 · 모바일 방향키 또는 스와이프.', '추적 중 !, 수색 중 ? 표시로 상대 행동을 읽으세요.'],primary:'계속하기'},
-      dead:{meta:'GAME OVER',title:'이번엔 내가 먹혔다.',body:'정면이나 측면은 위험합니다. 상대의 뒤로 돌아가려면 순환로와 코너를 이용하세요.',list:['흡수 기록: '+state.kills+' / '+state.enemies.length,'다음 시도에서는 적이 몸을 돌리는 시간도 노려 보세요.'],primary:'다시 시작 ↻'},
+      intro:{meta:'UNTITLED.TXT / V0.31',title:'문자 하나로 시작한다.',body:'방향키로 움직여 적의 뒤를 잡으세요. 입이 벌어진 방향이 공격 방향입니다. 적의 등 뒤에서 먹으면 색과 능력이 내 몸에 쌓입니다.',list:['첫 번째 @의 열린 꼬리는 오른쪽을 향합니다. 왼쪽에서 다가가면 흡수할 수 있어요.','@를 잡으면 @ 벽을 먹어 길을 만들 수 있습니다.','@를 먹으면 SPACE로 + 벽을 쓸 수 있습니다. 연속 사냥하면 잠깐 더 빨라져요.'],primary:'게임 시작 →'},
+      help:{meta:'HOW TO PLAY',title:'사냥 · 흡수 · 개척',body:'방향키 또는 WASD로 움직입니다. 적의 뒤쪽 한 칸에서 적에게 들어가면 흡수합니다. 입이 벌어진 쪽이나 옆에서 충돌하면 패배합니다.',list:['캐릭터의 열린 쪽 또는 글자 꼬리 방향이 그 캐릭터의 정면입니다.','@ → @ 벽, & → & 벽. 문자마다 새로운 길이 열립니다.','@를 먹은 뒤 SPACE로 앞쪽 빈 칸에 + 벽 쓰기. 8초 후 사라지고 먹물 1개를 소비합니다.','# 벽은 영원히 남으며, %를 먹으면 외곽 지름길을 열 수 있습니다.','R 재시작 · P 일시정지 · TAB 전체 지도 · 모바일 방향키 또는 스와이프.', '작은 □는 적의 뒤, 화살표는 다음 회전 예고입니다. !는 발견·공격 경고, ?는 수색입니다.'],primary:'계속하기'},
+      dead:{meta:'GAME OVER',title:'이번엔 내가 먹혔다.',body:state.deathReason||'상대의 뒤로 돌아가려면 순환로와 코너를 이용하세요.',list:['흡수 기록: '+state.kills+' / '+state.enemies.length,'다음 시도에서는 적이 몸을 돌리는 시간도 노려 보세요.'],primary:'다시 시작 ↻'},
       win:{meta:'WORLD CLEAR',title:'이 세계를 전부 먹었다.',body:'처음엔 문자 하나였지만, 적을 흡수하고 벽을 지워 세계를 직접 확장했습니다.',list:['흡수한 적: '+state.kills,'획득 문자: '+[...state.unlocks].join(' ') ,'이 미로의 핵심 재미가 검증됐는지 판단해 보세요.'],primary:'한 번 더 플레이 ↻'},
       pause:{meta:'PAUSED',title:'일시정지',body:'코너를 돌아 상대의 등 뒤로 접근하세요.',list:['방향키 / WASD 이동','P 를 눌러 재개할 수 있습니다.'],primary:'계속하기'}
     }[type];
@@ -481,7 +487,7 @@ const first=!state.unlocks.has(e.ch);state.unlocks.add(e.ch);
     $('dialogList').innerHTML='';for(const item of content.list){const li=document.createElement('li');li.textContent=item;$('dialogList').append(li)}
     $('btnPrimary').textContent=content.primary;$('btnSecondary').style.display='none';$('scrim').classList.remove('hidden');
   }
-  function closeDialog(){if(state.mode==='dead'||state.mode==='won'){buildMap()}state.mode='playing';$('scrim').classList.add('hidden');const n=performance.now();state.enemies.forEach(e=>{e.wake=Math.max(e.wake,n+1500);e.lastStep=n});state.lastPlayerStep=n;canvas.focus({preventScroll:true})}
+  function closeDialog(){const fresh=['intro','dead','won'].includes(state.mode);if(state.mode==='dead'||state.mode==='won')buildMap();state.mode=fresh?'playing':state.resumeMode||'playing';$('scrim').classList.add('hidden');const n=gameNow();if(fresh)state.enemies.forEach(e=>{e.wake=n+1500;e.lastStep=n});state.lastPlayerStep=n;canvas.focus({preventScroll:true})}
   function mouthOpen(now,lastStep,base=1.02,boost=.24){
     // Each grid step makes the mouth open-then-close once; the idle gape remains wide.
     const age=now-lastStep;
@@ -612,9 +618,9 @@ const first=!state.unlocks.has(e.ch);state.unlocks.add(e.ch);
     document.querySelectorAll('.skin-btn').forEach(b=>{const on=b===btn;b.classList.toggle('active',on);b.setAttribute('aria-pressed',String(on))});
   }));
   $('btnPrimary').onclick=closeDialog;
-  $('btnHelp').onclick=()=>{if(state.mode==='dead'||state.mode==='won')return;state.held=null;state.mode='paused';openDialog('help')};
-  $('btnRestart').onclick=()=>{buildMap();state.mode='playing';$('scrim').classList.add('hidden');state.enemies.forEach(e=>e.wake=performance.now()+1500);canvas.focus({preventScroll:true});toast('새 게임을 시작했습니다.',1200)};
-  $('btnPause').onclick=()=>{if(state.mode==='playing'){state.mode='paused';state.held=null;openDialog('pause')}else if(state.mode==='paused')closeDialog()};
+  $('btnHelp').onclick=()=>{if(state.mode==='dead'||state.mode==='won')return;if(state.mode!=='paused')state.resumeMode=state.mode==='absorbing'?'absorbing':'playing';state.held=null;state.mode='paused';openDialog('help')};
+  $('btnRestart').onclick=()=>{buildMap();state.mode='playing';$('scrim').classList.add('hidden');state.enemies.forEach(e=>e.wake=gameNow()+1500);canvas.focus({preventScroll:true});toast('새 게임을 시작했습니다.',1200)};
+  $('btnPause').onclick=()=>{if(state.mode==='playing'||state.mode==='absorbing'){state.resumeMode=state.mode;state.mode='paused';state.held=null;openDialog('pause')}else if(state.mode==='paused')closeDialog()};
   $('btnSound').onclick=()=>setSound(state.mute);
   $('btnWrite').onclick=()=>writeWall();$('btnMobileWrite').onclick=()=>writeWall();
   $('btnMap').onclick=()=>{state.overview=!state.overview;$('btnMap').classList.toggle('active',state.overview);$('btnMap').textContent=state.overview?'원래 시점 [TAB]':'전체 지도 [TAB]'};
@@ -623,16 +629,21 @@ const first=!state.unlocks.has(e.ch);state.unlocks.add(e.ch);
     const direction=inputDir(event.code);
     if(direction){event.preventDefault();if(state.mode==='playing'){if(state.held!==direction){state.held=direction;movePlayer(direction)} }return}
     if(event.code==='Space'&&state.mode==='playing'){event.preventDefault();writeWall();return}
+    if(event.repeat&&!direction)return;
     if(event.code==='Tab'){event.preventDefault();$('btnMap').click();return}
     if(event.code==='KeyR'){event.preventDefault();$('btnRestart').click()}
     if(event.code==='KeyP'||event.code==='Escape'){event.preventDefault();$('btnPause').click()}
-    if((event.code==='Enter'||event.code==='Space')&&state.mode!=='playing'){event.preventDefault();$('btnPrimary').click()}
+    if((event.code==='Enter'||event.code==='Space')&&['intro','paused','dead','won'].includes(state.mode)){event.preventDefault();$('btnPrimary').click()}
   });
   document.addEventListener('keyup',event=>{const d=inputDir(event.code);if(d&&state.held===d)state.held=null});
-  window.addEventListener('blur',()=>{state.held=null});
+  const releaseInput=()=>{state.held=null;activePointer=null};
+  const autoPause=()=>{releaseInput();if(state.mode==='playing'||state.mode==='absorbing')$('btnPause').click()};
+  window.addEventListener('blur',autoPause);
+  document.addEventListener('visibilitychange',()=>{if(document.hidden)autoPause()});
+  let activePointer=null;
   for(const b of document.querySelectorAll('.dir')){
-    b.addEventListener('pointerdown',ev=>{ev.preventDefault();b.setPointerCapture(ev.pointerId);const d=b.dataset.dir;if(state.mode==='playing'){state.held=d;movePlayer(d)}});
-    b.addEventListener('pointerup',()=>{state.held=null});b.addEventListener('pointercancel',()=>{state.held=null});b.addEventListener('lostpointercapture',()=>{state.held=null});
+    b.addEventListener('pointerdown',ev=>{ev.preventDefault();if(state.mode!=='playing')return;activePointer=ev.pointerId;b.setPointerCapture(ev.pointerId);const d=b.dataset.dir;state.held=d;movePlayer(d)});
+    for(const type of ['pointerup','pointercancel','lostpointercapture'])b.addEventListener(type,ev=>{if(ev.pointerId===activePointer)releaseInput()});
   }
   let touchStart=null;
   canvas.addEventListener('touchstart',ev=>{if(ev.touches.length===1)touchStart={x:ev.touches[0].clientX,y:ev.touches[0].clientY}},{passive:true});
@@ -658,7 +669,7 @@ const first=!state.unlocks.has(e.ch);state.unlocks.add(e.ch);
     }
     ctx.globalAlpha=1;
     // Breathe on the next unlocked gate so the player spots where to explore.
-    const gate=state.unlocks.has('&')?'&':state.unlocks.has('@')?'@':null;
+    const gate=state.unlocks.has('%')?'%':state.unlocks.has('&')?'&':state.unlocks.has('@')?'@':null;
     if(gate){
       ctx.save();ctx.textAlign='center';ctx.textBaseline='middle';ctx.font='19px Consolas, "Courier New", monospace';
       for(let y=0;y<H;y++)for(let x=0;x<W;x++)if(tile(x,y)===gate&&state.revealed[idx(x,y)]){
@@ -687,6 +698,9 @@ const first=!state.unlocks.has(e.ch);state.unlocks.add(e.ch);
       const cx=((e.prevX??e.x)+(e.x-(e.prevX??e.x))*ease+.5)*CELL;
       const cy=((e.prevY??e.y)+(e.y-(e.prevY??e.y))*ease+.5)*CELL;
       drawEnemyGlyph(cx,cy,e,now);
+      if(e.turn){ctx.font='bold 14px monospace';ctx.fillStyle='#775f39';ctx.fillText({up:'↑',right:'→',down:'↓',left:'←'}[e.turn],cx,cy-17)}
+      const rear=dirs[e.dir],rx=e.x-rear.x,ry=e.y-rear.y;
+      if(isFloor(rx,ry)&&!enemyAt(rx,ry)){ctx.strokeStyle='#729080';ctx.lineWidth=1.5;ctx.strokeRect((rx+.5)*CELL-4,(ry+.5)*CELL-4,8,8)}
       if(e.alertUntil>now){ctx.font='bold 13px Consolas,monospace';ctx.fillStyle='#a74c44';ctx.fillText('!',cx+13,cy-12)}
       else if(e.goal&&e.seenUntil>now){ctx.font='12px Consolas,monospace';ctx.fillStyle='#708291';ctx.fillText('?',cx+13,cy-12)}
     }
@@ -703,10 +717,13 @@ const first=!state.unlocks.has(e.ch);state.unlocks.add(e.ch);
     for(const o of state.particles){const t=(now-o.from)/1000;ctx.globalAlpha=Math.max(0,1-(now-o.from)/o.life);ctx.fillStyle=o.ch==='@'?'#718fac':o.ch==='&'?'#c48b58':'#ad739f';ctx.beginPath();ctx.arc(o.x+o.vx*t,o.y+o.vy*t,2,0,Math.PI*2);ctx.fill()}ctx.globalAlpha=1;
     ctx.restore();
   }
-  function frame(now){
+  function frame(timestamp){
+    const elapsed=Math.max(0,Math.min(100,timestamp-lastTick));lastTick=timestamp;
+    if(state.mode==='playing'||state.mode==='absorbing')gameTime+=elapsed;
+    const now=gameNow();
     if(state.mode==='playing'){
       updateWalls(now);
-      const interval=145/Math.min(1.55,1+state.kills*.07+(now<state.surgeUntil?.15:0));
+      const interval=145/playerSpeed();
       if(state.held&&now-state.lastPlayerStep>interval)movePlayer(state.held,now);
       for(const e of state.enemies){if(!e.alive||e.zone>state.stage||now<e.wake)continue;if(now-e.lastStep>=e.speed){e.lastStep=now;aiStep(e,now)}}
     } else if(state.mode==='absorbing'&&state.absorbEvent){
@@ -720,7 +737,8 @@ const first=!state.unlocks.has(e.ch);state.unlocks.add(e.ch);
     }
     if(state.toastUntil&&now>state.toastUntil){$('toast').classList.remove('show');state.toastUntil=0}
     if(state.messageUntil!==Infinity&&now>state.messageUntil){state.messageUntil=Infinity;$('hint').textContent='뒤에서 흡수 → 벽 지우기 → SPACE로 + 벽 쓰기 → 우회 사냥'}
-    if(now-state.lastFrame>25){
+    if(now-state.lastFrame>25||state.mode!=='playing'){
+      $('levelInfo').textContent='LV.'+String(1+state.unlocks.size).padStart(2,'0')+' · 이동속도 '+Math.round(playerSpeed()*100)+'%';
       const active=state.mode==='playing'&&now<state.comboUntil&&state.combo>1;
       $('comboLabel').textContent=active?state.combo+'연속 사냥 · '+(now<state.surgeUntil?'속도 상승 중':'다음 사냥을 노려라'):'연속 흡수 없음';
       $('comboFill').style.width=active?Math.max(0,100*(state.comboUntil-now)/5000)+'%':'0%';
@@ -729,7 +747,7 @@ const first=!state.unlocks.has(e.ch);state.unlocks.add(e.ch);
     requestAnimationFrame(frame)
   }
   // Small deterministic hook for local automated smoke tests.
-  window.__TEXT_HUNTER_TEST__={snapshot:()=>({mode:state.mode,x:state.player.x,y:state.player.y,dir:state.player.dir,kills:state.kills,stage:state.stage,absorb:state.absorbEvent?{...state.absorbEvent}:null,skin:state.skin,ink:state.ink,walls:state.walls.map(w=>({x:w.x,y:w.y})),overview:state.overview,combo:state.combo,bestCombo:state.bestCombo,absorbed:state.absorbed.map(a=>a.ch),unlocks:[...state.unlocks],enemies:state.enemies.filter(e=>e.alive).map(e=>({ch:e.ch,x:e.x,y:e.y,dir:e.dir,zone:e.zone,style:e.style,goal:e.goal})),map:state.map.map(r=>r.join(''))}),move:dir=>movePlayer(dir),reset:()=>buildMap()};
+  window.__TEXT_HUNTER_TEST__={snapshot:()=>({mode:state.mode,x:state.player.x,y:state.player.y,dir:state.player.dir,kills:state.kills,stage:state.stage,absorb:state.absorbEvent?{...state.absorbEvent}:null,skin:state.skin,ink:state.ink,walls:state.walls.map(w=>({x:w.x,y:w.y})),overview:state.overview,combo:state.combo,bestCombo:state.bestCombo,absorbed:state.absorbed.map(a=>a.ch),unlocks:[...state.unlocks],time:gameNow(),speed:playerSpeed(),enemies:state.enemies.filter(e=>e.alive).map(e=>({id:e.id,ch:e.ch,x:e.x,y:e.y,dir:e.dir,turn:e.turn,zone:e.zone,style:e.style,goal:e.goal,wake:e.wake})),map:state.map.map(r=>r.join(''))}),move:dir=>movePlayer(dir),reset:()=>buildMap()};
   buildMap();openDialog('intro');requestAnimationFrame(frame);
 })();
 </script>
