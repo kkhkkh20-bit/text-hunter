@@ -20,13 +20,14 @@ const base = process.env.TEXT_HUNTER_URL || 'http://127.0.0.1:8000';
       assert.equal((await snapshot()).mode, 'intro');
       await page.click('#btnPrimary');
       assert.equal((await snapshot()).mode, 'playing');
+      assert.deepEqual(await page.locator('button:visible').allTextContents(), ['일시정지']);
     });
-    await check('rear absorption survives help during animation; growth and record persist', async () => {
+    await check('rear absorption survives pause during animation; growth and record persist', async () => {
       await page.keyboard.press('ArrowRight');
       await page.keyboard.press('ArrowRight');
       await page.keyboard.press('ArrowRight');
       assert.equal((await snapshot()).mode, 'absorbing');
-      await page.click('#btnHelp');
+      await page.click('#btnPause');
       assert.equal((await snapshot()).mode, 'paused');
       const frozen = (await snapshot()).time;
       await page.waitForTimeout(350);
@@ -58,8 +59,8 @@ const base = process.env.TEXT_HUNTER_URL || 'http://127.0.0.1:8000';
       assert.deepEqual((await snapshot()).enemies.map(e => e.wake), before.enemies.map(e => e.wake));
     });
     await check('map, mobile layout, restart and damaged saved record', async () => {
-      await page.click('#btnMap'); assert.equal((await snapshot()).overview, true);
-      await page.click('#btnMap'); assert.equal((await snapshot()).overview, false);
+      await page.keyboard.press('Tab'); assert.equal((await snapshot()).overview, true);
+      await page.keyboard.press('Tab'); assert.equal((await snapshot()).overview, false);
       await page.setViewportSize({ width: 390, height: 844 });
       assert.ok(await page.locator('.controls').isVisible());
       const dimensions = await page.evaluate(() => ({ width: innerWidth, content: document.documentElement.scrollWidth }));
@@ -68,9 +69,9 @@ const base = process.env.TEXT_HUNTER_URL || 'http://127.0.0.1:8000';
         await page.evaluate(v => localStorage.setItem('text-hunter-v030-best', v), value);
         await page.reload(); await page.click('#btnPrimary');
         assert.equal((await snapshot()).mode, 'playing');
-        assert.ok(!(await page.locator('#recordLabel').textContent()).includes('NaN'));
+        assert.ok(!(await page.locator('.score').textContent()).includes('NaN'));
       }
-      await page.click('#btnRestart'); assert.equal((await snapshot()).kills, 0);
+      await page.keyboard.press('KeyR'); assert.equal((await snapshot()).kills, 0);
     });
 
     await check('real mobile touch holds movement and releases cleanly', async () => {
@@ -142,7 +143,7 @@ const base = process.env.TEXT_HUNTER_URL || 'http://127.0.0.1:8000';
       assert.equal(r.normal,1.4);assert.ok(Math.abs(r.boosted-1.55)<1e-9);
     });
     await check('pointer ownership, cancellation and background pause', async () => {
-      await fixture.click('#btnRestart');
+      await fixture.keyboard.press('KeyR');
       const held=await fixture.evaluate(()=>{
         for(const b of document.querySelectorAll('.dir'))b.setPointerCapture=()=>{};
         const send=(dir,type,id)=>document.querySelector(`[data-dir="${dir}"]`).dispatchEvent(new PointerEvent(type,{pointerId:id,bubbles:true}));
