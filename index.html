@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8" />
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover" />
-<title>untitled.txt — 문자 사냥 v0.43</title>
+<title>untitled.txt — 문자 사냥 v0.44</title>
 <link rel="icon" href="./icon.svg" type="image/svg+xml">
 <style>
   :root{--paper:#fbfbfa;--ink:#242424}*{box-sizing:border-box}
@@ -230,11 +230,9 @@ const first=!state.unlocks.has(e.ch);state.unlocks.add(e.ch);
     showMessage(why,Infinity);
     openDialog('dead');
   }
-  function warnContact(e,now){
+  function prepareAttack(e,now){
     if(!e.attackReadyAt||e.threatX!==state.player.x||e.threatY!==state.player.y){
       e.threatX=state.player.x;e.threatY=state.player.y;e.attackReadyAt=now+850;e.alertUntil=now+1500;e.windup=now;
-      const held=dirs[state.held];
-      if(held&&state.player.x+held.x===e.x&&state.player.y+held.y===e.y)state.held=null;
       tone(180,.06,'triangle',.02);return true;
     }
     return now<e.attackReadyAt;
@@ -248,7 +246,7 @@ const first=!state.unlocks.has(e.ch);state.unlocks.add(e.ch);
     const p=state.player;const ox=p.x,oy=p.y;p.dir=dirName;
     const x=ox+d.x,y=oy+d.y;if(!valid(x,y))return false;
     const e=enemyAt(x,y);
-    if(e){if(canEat(e,ox,oy)){startAbsorb(e,now)}else{if(!warnContact(e,now))die(now,'경고한 적의 정면에 다시 닿았습니다.');updateUI();return false}}
+    if(e){if(canEat(e,ox,oy)){startAbsorb(e,now)}else{die(now,'적의 정면 또는 측면에 부딪쳤습니다.');updateUI();return false}}
     else{
       const t=tile(x,y);
       if(t==='#'){tone(120,.045,'triangle',.012);return false}
@@ -335,7 +333,7 @@ const first=!state.unlocks.has(e.ch);state.unlocks.add(e.ch);
     const d=dirs[e.dir],nx=e.x+d.x,ny=e.y+d.y;
     if(!isFloor(nx,ny))return;
     if(nx===state.player.x&&ny===state.player.y){
-      if(warnContact(e,now))return;
+      if(prepareAttack(e,now))return;
       die(now,'공격 경고 후 적의 입에 닿았습니다.');return;
     }
     e.windup=0;e.attackReadyAt=0;
@@ -536,7 +534,6 @@ const first=!state.unlocks.has(e.ch);state.unlocks.add(e.ch);
       const cx=((e.prevX??e.x)+(e.x-(e.prevX??e.x))*ease+.5)*CELL;
       const cy=((e.prevY??e.y)+(e.y-(e.prevY??e.y))*ease+.5)*CELL;
       drawEnemyGlyph(cx,cy,e,now);
-      if(e.attackReadyAt&&now<e.attackReadyAt+700){ctx.strokeStyle='#ac4a43';ctx.lineWidth=1.5;ctx.beginPath();ctx.arc(cx,cy,14,0,Math.PI*2);ctx.stroke()}
 
       if(e.turn){ctx.font='bold 14px monospace';ctx.fillStyle='#775f39';ctx.fillText({up:'↑',right:'→',down:'↓',left:'←'}[e.turn],cx,cy-17)}
       if(e.alertUntil>now){ctx.font='bold 13px Consolas,monospace';ctx.fillStyle='#a74c44';ctx.fillText('!',cx+13,cy-12)}

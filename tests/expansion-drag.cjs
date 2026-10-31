@@ -150,27 +150,27 @@ const base=process.env.TEXT_HUNTER_URL||'http://127.0.0.1:8000';
    });
    assert.deepEqual(r,{cornerVisible:true,terrain:true,far:false});
   });
-  await check('first frontal contact stops dangerous movement, grants 850ms and permits escape',async()=>{
+  await check('walking into any enemy front or side is immediately fatal',async()=>{
+   const outcomes=[];
+   for(const dir of ['left','up','down']){
+    await page.keyboard.press('KeyR');
+    outcomes.push(await page.evaluate(dir=>{
+     const {state:s,movePlayer,gameNow}=scenario;s.enemies.forEach(e=>e.alive=false);s.started=true;
+     Object.assign(s.enemies[1],{alive:true,x:43,y:31,dir,wake:0,turn:null,attackReadyAt:0});
+     const moved=movePlayer('right',gameNow());return {mode:s.mode,moved,x:s.player.x};
+    },dir));
+   }
+   assert.deepEqual(outcomes,Array(3).fill({mode:'dead',moved:false,x:42}));
+  });
+  await check('AI warns before attacking, but its preparation does not protect a reckless approach',async()=>{
    await page.keyboard.press('KeyR');
    const r=await page.evaluate(()=>{
     const {state:s,movePlayer,gameNow,aiStep}=scenario;s.enemies.forEach(e=>e.alive=false);s.started=true;
-    const e=s.enemies[1];Object.assign(e,{alive:true,x:43,y:31,prevX:43,prevY:31,dir:'left',wake:0,turn:null,attackReadyAt:0});
-    s.held='right';const now=gameNow()+100;movePlayer('right',now);
-    const first={mode:s.mode,x:s.player.x,held:s.held,delay:e.attackReadyAt-now};
-    movePlayer('right',now+400);const protectedMode=s.mode;
-    const escaped=movePlayer('left',now+450);aiStep(e,now+1000);
-    return {first,protectedMode,escaped,mode:s.mode};
-   });
-   assert.ok(Math.abs(r.first.delay-850)<1e-6);assert.deepEqual({mode:r.first.mode,x:r.first.x,held:r.first.held},{mode:'playing',x:42,held:null});assert.equal(r.protectedMode,'playing');assert.ok(r.escaped);assert.equal(r.mode,'playing');
-  });
-  await check('contact warning cannot be renewed into permanent invulnerability',async()=>{
-   await page.keyboard.press('KeyR');
-   const r=await page.evaluate(()=>{
-    const {state:s,movePlayer,gameNow}=scenario;s.enemies.forEach(e=>e.alive=false);s.started=true;
     const e=s.enemies[1];Object.assign(e,{alive:true,x:43,y:31,dir:'left',wake:0,turn:null,attackReadyAt:0});
-    const now=gameNow()+100;movePlayer('right',now);movePlayer('right',now+400);movePlayer('right',now+900);return s.mode;
+    const now=gameNow()+100;aiStep(e,now);const warned=s.mode==='playing'&&e.attackReadyAt>now;
+    movePlayer('right',now+100);return {warned,mode:s.mode};
    });
-   assert.equal(r,'dead');
+   assert.deepEqual(r,{warned:true,mode:'dead'});
   });
   await check('short early patrol repeats without random turns and resumes after a lost clue',async()=>{
    await page.keyboard.press('KeyR');
@@ -219,17 +219,17 @@ const base=process.env.TEXT_HUNTER_URL||'http://127.0.0.1:8000';
     await session.send('Input.dispatchTouchEvent',{type:'touchEnd',touchPoints:[]});
    }finally{await context.close()}
   });
-  await check('a blocked finger can reverse away from contact without a new touch',async()=>{
+  await check('a finger can reverse before enemy contact without a new touch',async()=>{
    await page.keyboard.press('KeyR');
    const r=await page.evaluate(()=>{
     const {state:s,gameNow,movePlayer}=scenario;s.enemies.forEach(e=>e.alive=false);s.started=true;
-    Object.assign(s.enemies[1],{alive:true,x:43,y:31,dir:'left',attackReadyAt:0});
+    Object.assign(s.enemies[1],{alive:true,x:45,y:31,dir:'left',attackReadyAt:0});
     const board=document.querySelector('#board');board.setPointerCapture=()=>{};
     const send=(type,x)=>board.dispatchEvent(new PointerEvent(type,{pointerId:55,clientX:x,clientY:200,button:0,bubbles:true}));
-    send('pointerdown',150);send('pointermove',190);movePlayer('right',gameNow());const blocked=s.held;
-    send('pointermove',160);const reversing=s.held;send('pointerup',160);return {blocked,reversing,released:s.held};
+    send('pointerdown',150);send('pointermove',190);const approaching=s.held;
+    send('pointermove',160);const reversing=s.held;send('pointerup',160);return {approaching,reversing,released:s.held,mode:s.mode};
    });
-   assert.deepEqual(r,{blocked:null,reversing:'left',released:null});
+   assert.deepEqual(r,{approaching:'right',reversing:'left',released:null,mode:'playing'});
   });
   assert.deepEqual(errors,[]);console.log(`${count} checks passed; no JavaScript page errors.`);
  }finally{await browser.close()}
