@@ -1,0 +1,100 @@
+<!doctype html>
+<html lang="ko">
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>한 칸 한 박자 — TEXT HUNTER 실험판</title>
+<link rel="icon" href="./icon.svg" type="image/svg+xml">
+<style>
+*{box-sizing:border-box}[hidden]{display:none!important}body{margin:0;padding:16px;background:#eeefed;color:#252525;font:13px Consolas,'Courier New',monospace}.window{max-width:540px;margin:0 auto;background:white;border:1px solid #bec4c9;box-shadow:0 4px 20px #00000008}header,footer{display:flex;align-items:center;justify-content:space-between;gap:12px;padding:12px 16px;background:#f8f9fa}header{border-bottom:1px solid #e6e8ea}header span:last-child,footer{color:#777;font-size:11px}footer{border-top:1px solid #eee;background:white}.sheet{position:relative;padding:8px}canvas{width:100%;aspect-ratio:17/13;display:block;touch-action:none;user-select:none}button{font:inherit;min-height:44px;padding:10px 18px;background:#252525;color:white;border:0;cursor:pointer}button:focus-visible,canvas:focus-visible{outline:2px solid #45678a}.overlay{position:absolute;inset:0;display:grid;place-content:center;gap:16px;text-align:center;background:#fffffff0;z-index:2}.overlay p{margin:0;font-size:18px;font-weight:normal}.drag{display:grid;place-items:center;min-height:100px;color:#999;font-size:11px;border-top:1px solid #eee;touch-action:none;user-select:none}.drag.active{color:#333}.link{display:block;width:fit-content;margin:16px auto;color:#888;text-decoration:none;font-size:11px}@media(min-width:731px) and (hover:hover){.drag{display:none}}@media(max-width:400px){body{padding:8px}header,footer{padding:10px 12px}}@media(max-height:500px) and (pointer:coarse){body{padding:4px}.window{max-width:420px}header,footer{padding:4px 12px}.sheet{max-width:330px;margin:auto}.drag{display:none}.link{margin:4px auto}}
+</style>
+<main class="window">
+ <header><span>untitled.txt</span><span id="score">0 / 3</span></header>
+ <div class="sheet">
+  <canvas id="board" tabindex="0" aria-label="문자 미로. 방향키 또는 드래그로 이동"></canvas>
+  <div id="overlay" class="overlay" hidden><p id="result"></p><button id="retry">다시</button></div>
+ </div>
+ <footer><span id="position"></span><span id="turn">0 keystrokes</span></footer>
+ <div id="dragPad" class="drag" aria-label="원하는 방향으로 드래그. 손을 떼면 적도 멈춥니다.">드래그</div>
+</main>
+<a class="link" href="./index.html">기존 실시간 버전</a>
+<script src="./beat-engine.js"></script>
+<script>
+(()=>{'use strict';
+const engine=BeatEngine,$=id=>document.getElementById(id),canvas=$('board'),ctx=canvas.getContext('2d');
+let state=engine.initial(),held=null,drag=null,lastStep=-Infinity,motion=null;
+const reduced=()=>matchMedia('(prefers-reduced-motion: reduce)').matches;
+function release(){held=null;drag=null;$('dragPad').classList.remove('active')}
+function reset(){release();state=engine.initial();motion=null;lastStep=-Infinity;update()}
+function update(){
+ $('score').textContent=state.kills+' / 3';$('position').textContent='Ln '+(state.player.y+1)+', Col '+(state.player.x+1);
+ $('turn').textContent=state.turn+' keystrokes';$('overlay').hidden=state.mode==='playing';
+ $('result').textContent=state.mode==='won'?'모두 지웠다.':'다시 써 보자.';
+ if(state.mode!=='playing')release();
+}
+function step(dir){
+ const next=engine.advance(state,dir);lastStep=performance.now();
+ if(next===state)return false;
+ motion={before:state,from:performance.now()};state=next;update();return true;
+}
+const keys={ArrowUp:'up',KeyW:'up',ArrowRight:'right',KeyD:'right',ArrowDown:'down',KeyS:'down',ArrowLeft:'left',KeyA:'left'};
+document.addEventListener('keydown',ev=>{
+ if(keys[ev.code]){ev.preventDefault();if(ev.repeat||state.mode!=='playing')return;held=keys[ev.code];step(held)}
+ if(ev.code==='KeyR'||(ev.code==='Enter'&&state.mode!=='playing')){ev.preventDefault();reset()}
+});
+document.addEventListener('keyup',ev=>{if(keys[ev.code]===held)held=null});
+for(const surface of [canvas,$('dragPad')]){
+ surface.addEventListener('pointerdown',ev=>{
+  if(state.mode!=='playing'||drag||ev.button!==0)return;ev.preventDefault();surface.setPointerCapture(ev.pointerId);
+  drag={id:ev.pointerId,x:ev.clientX,y:ev.clientY,dir:null};$('dragPad').classList.add('active');
+ });
+ surface.addEventListener('pointermove',ev=>{
+  if(drag?.id!==ev.pointerId)return;ev.preventDefault();const dx=ev.clientX-drag.x,dy=ev.clientY-drag.y;
+  if(Math.hypot(dx,dy)<10)return;
+  const dir=Math.abs(dx)>Math.abs(dy)?(dx>0?'right':'left'):(dy>0?'down':'up');
+  drag.x=ev.clientX;drag.y=ev.clientY;
+  if(dir!==drag.dir){drag.dir=dir;held=dir;if(performance.now()-lastStep>=180)step(dir)}else held=dir;
+ });
+ for(const type of ['pointerup','pointercancel','lostpointercapture'])surface.addEventListener(type,ev=>{if(drag?.id===ev.pointerId)release()});
+ surface.addEventListener('contextmenu',ev=>ev.preventDefault());
+}
+window.addEventListener('blur',release);window.addEventListener('resize',release);
+document.addEventListener('visibilitychange',()=>{if(document.hidden)release()});$('retry').onclick=reset;
+function glyph(x,y,dir,size,alpha=1){
+ const [dx,dy]=engine.dirs[dir],px=-dy,py=dx;
+ ctx.save();ctx.globalAlpha=alpha;ctx.strokeStyle='#202020';ctx.lineWidth=2.6;ctx.lineCap='round';
+ ctx.beginPath();ctx.moveTo(x+dx*size+px*size*.65,y+dy*size+py*size*.65);ctx.lineTo(x-dx*size*.65,y-dy*size*.65);ctx.lineTo(x+dx*size-px*size*.65,y+dy*size-py*size*.65);ctx.stroke();ctx.restore();
+}
+function draw(timestamp){
+ if(held&&state.mode==='playing'&&timestamp-lastStep>=240)step(held);
+ const r=canvas.getBoundingClientRect(),dpr=devicePixelRatio||1,w=Math.round(r.width*dpr),h=Math.round(r.height*dpr);
+ if(canvas.width!==w||canvas.height!==h){canvas.width=w;canvas.height=h}
+ ctx.setTransform(dpr,0,0,dpr,0,0);ctx.fillStyle='white';ctx.fillRect(0,0,r.width,r.height);
+ const cell=r.width/17;ctx.textAlign='center';ctx.textBaseline='middle';ctx.font=Math.floor(cell*.76)+'px Consolas,monospace';
+ for(let y=0;y<13;y++)for(let x=0;x<17;x++){
+  const ch=state.map[y][x];if(ch===' ')continue;
+  if(ch==='#'&&!Object.values(engine.dirs).some(([dx,dy])=>state.map[y+dy]?.[x+dx]&&state.map[y+dy][x+dx]!=='#'))continue;
+  ctx.fillStyle=ch==='#'?'#929699':state.unlocks.includes(ch)?'#3f6175':'#b1b1b1';ctx.fillText(ch,(x+.5)*cell,(y+.5)*cell);
+ }
+ const t=reduced()?1:Math.min(1,(timestamp-(motion?.from??0))/110),ease=1-Math.pow(1-t,3);
+ for(const e of state.enemies){
+  if(!e.alive)continue;const old=motion?.before.enemies.find(a=>a.id===e.id)||e;
+  const x=(old.x+(e.x-old.x)*ease+.5)*cell,y=(old.y+(e.y-old.y)*ease+.5)*cell;
+  const intent=e.intent;
+  if(intent.type==='move'){ctx.fillStyle='#252525';ctx.globalAlpha=.20;ctx.fillText(e.ch,(intent.x+.5)*cell,(intent.y+.5)*cell);ctx.globalAlpha=1}
+  ctx.fillStyle='#333';ctx.fillText(e.ch,x,y);
+  const [dx,dy]=engine.dirs[e.dir];ctx.strokeStyle='#333';ctx.lineWidth=1.5;
+  ctx.beginPath();ctx.moveTo(x+dx*cell*.28-dy*cell*.13,y+dy*cell*.28+dx*cell*.13);ctx.lineTo(x+dx*cell*.43,y+dy*cell*.43);ctx.lineTo(x+dx*cell*.28+dy*cell*.13,y+dy*cell*.28-dx*cell*.13);ctx.stroke();
+  if(intent.type==='turn'){ctx.fillStyle='#777';ctx.font=Math.floor(cell*.5)+'px monospace';ctx.fillText({up:'↑',right:'→',down:'↓',left:'←'}[intent.dir],x,y-cell*.5);ctx.font=Math.floor(cell*.76)+'px Consolas,monospace'}
+ }
+ const p=state.player,old=motion?.before.player||p,px=(old.x+(p.x-old.x)*ease+.5)*cell,py=(old.y+(p.y-old.y)*ease+.5)*cell;
+ glyph(px,py,p.dir,cell*.29);
+ const [dx,dy]=engine.dirs[p.dir],cx=p.x+dx,cy=p.y+dy;
+ if(!held&&state.mode==='playing'&&state.map[cy]?.[cx]===' '&&!state.enemies.some(e=>e.alive&&e.x===cx&&e.y===cy)&&(reduced()||Math.floor(timestamp/550)%2===0)){
+  ctx.fillStyle='#777';ctx.fillRect(cx*cell+cell*.12,cy*cell+cell*.20,1,cell*.60);
+ }
+ requestAnimationFrame(draw);
+}
+window.__BEAT_TEST__={snapshot:()=>JSON.parse(JSON.stringify(state)),step,reset};update();requestAnimationFrame(draw);
+})();
+</script>
+</html>
