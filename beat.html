@@ -64,6 +64,22 @@ function glyph(x,y,dir,size,alpha=1){
  ctx.save();ctx.globalAlpha=alpha;ctx.strokeStyle='#202020';ctx.lineWidth=2.6;ctx.lineCap='round';
  ctx.beginPath();ctx.moveTo(x+dx*size+px*size*.65,y+dy*size+py*size*.65);ctx.lineTo(x-dx*size*.65,y-dy*size*.65);ctx.lineTo(x+dx*size-px*size*.65,y+dy*size-py*size*.65);ctx.stroke();ctx.restore();
 }
+function enemyGlyph(x,y,e,old,progress,cell){
+ const angle={right:0,down:Math.PI/2,left:Math.PI,up:-Math.PI/2};
+ let delta=angle[e.dir]-angle[old.dir];if(delta>Math.PI)delta-=Math.PI*2;if(delta<-Math.PI)delta+=Math.PI*2;
+ ctx.save();ctx.translate(x,y);ctx.rotate(angle[old.dir]+delta*progress);ctx.scale(cell/24,cell/24);
+ ctx.strokeStyle='#303030';ctx.fillStyle='#303030';ctx.lineCap='round';ctx.lineJoin='round';
+ if(e.ch==='@'){
+  ctx.lineWidth=2.2;ctx.beginPath();ctx.arc(-1,0,8,.62,Math.PI*2-.62);ctx.stroke();
+  ctx.lineWidth=1.6;ctx.beginPath();ctx.arc(-2,0,3,-.3,Math.PI*1.75);ctx.stroke();
+  ctx.beginPath();ctx.moveTo(1,-2);ctx.quadraticCurveTo(5,-5,7,-2);ctx.stroke();
+ }else{
+  // The glyph itself rotates; its terminal strokes form the opening.
+  ctx.font='bold 19px Georgia,serif';ctx.textAlign='center';ctx.textBaseline='middle';ctx.fillText(e.ch,-1,0);
+  ctx.lineWidth=1.8;ctx.beginPath();ctx.moveTo(3,-3);ctx.lineTo(8,-6);ctx.moveTo(3,3);ctx.lineTo(8,6);ctx.stroke();
+ }
+ ctx.restore();
+}
 function draw(timestamp){
  if(held&&state.mode==='playing'&&timestamp-lastStep>=240)step(held);
  const r=canvas.getBoundingClientRect(),dpr=devicePixelRatio||1,w=Math.round(r.width*dpr),h=Math.round(r.height*dpr);
@@ -79,12 +95,7 @@ function draw(timestamp){
  for(const e of state.enemies){
   if(!e.alive)continue;const old=motion?.before.enemies.find(a=>a.id===e.id)||e;
   const x=(old.x+(e.x-old.x)*ease+.5)*cell,y=(old.y+(e.y-old.y)*ease+.5)*cell;
-  const intent=e.intent;
-  if(intent.type==='move'){ctx.fillStyle='#252525';ctx.globalAlpha=.20;ctx.fillText(e.ch,(intent.x+.5)*cell,(intent.y+.5)*cell);ctx.globalAlpha=1}
-  ctx.fillStyle='#333';ctx.fillText(e.ch,x,y);
-  const [dx,dy]=engine.dirs[e.dir];ctx.strokeStyle='#333';ctx.lineWidth=1.5;
-  ctx.beginPath();ctx.moveTo(x+dx*cell*.28-dy*cell*.13,y+dy*cell*.28+dx*cell*.13);ctx.lineTo(x+dx*cell*.43,y+dy*cell*.43);ctx.lineTo(x+dx*cell*.28+dy*cell*.13,y+dy*cell*.28-dx*cell*.13);ctx.stroke();
-  if(intent.type==='turn'){ctx.fillStyle='#777';ctx.font=Math.floor(cell*.5)+'px monospace';ctx.fillText({up:'↑',right:'→',down:'↓',left:'←'}[intent.dir],x,y-cell*.5);ctx.font=Math.floor(cell*.76)+'px Consolas,monospace'}
+  enemyGlyph(x,y,e,old,ease,cell);
  }
  const p=state.player,old=motion?.before.player||p,px=(old.x+(p.x-old.x)*ease+.5)*cell,py=(old.y+(p.y-old.y)*ease+.5)*cell;
  glyph(px,py,p.dir,cell*.29);

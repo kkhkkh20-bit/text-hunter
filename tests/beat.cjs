@@ -6,7 +6,7 @@ const keys={up:'ArrowUp',right:'ArrowRight',down:'ArrowDown',left:'ArrowLeft'};
 let count=0;
 const check=async(name,fn)=>{await fn();count++;console.log('PASS '+name)};
 function solve(){
- const start=E.initial(),key=s=>JSON.stringify([s.player.x,s.player.y,s.map,s.enemies.map(e=>[e.alive,e.x,e.y,e.dir,e.next,e.intent]),s.unlocks]);
+ const start=E.initial(),key=s=>JSON.stringify([s.player.x,s.player.y,s.player.dir,s.turn%12,s.map,s.enemies.map(e=>[e.alive,e.x,e.y,e.dir,e.intent,e.goal,e.memory]),s.unlocks]);
  const queue=[{s:start,path:[]}],seen=new Set([key(start)]);
  for(let i=0;i<queue.length&&i<50000;i++){
   const {s,path}=queue[i];
@@ -19,7 +19,7 @@ function solve(){
  throw Error('no complete route found');
 }
 (async()=>{
- await check('one successful step executes exactly the previously announced enemy actions',()=>{
+ await check('one successful step executes exactly the previously committed enemy actions',()=>{
   const old=E.initial(),saved=JSON.stringify(old),next=E.advance(old,'right');
   assert.equal(next.turn,1);assert.equal(next.player.x,4);
   for(const e of old.enemies.filter(e=>e.intent.type==='move')){
@@ -30,7 +30,7 @@ function solve(){
  await check('blocked input spends no turn and turns never also move',()=>{
   let s=E.initial();s=E.advance(s,'left');s=E.advance(s,'left');
   assert.equal(E.advance(s,'left'),s);
-  s=E.advance(E.advance(E.initial(),'right'),'right');
+  s=E.initial();s.enemies[1].goal={x:11,y:5};s.enemies[1].memory=4;s.enemies[1].intent=E.plan(s,s.enemies[1]);
   const turners=s.enemies.filter(e=>e.alive&&e.intent.type==='turn');assert.ok(turners.length);
   const next=E.advance(s,'left');
   for(const e of turners){const n=next.enemies.find(a=>a.id===e.id);assert.deepEqual([n.x,n.y],[e.x,e.y]);assert.equal(n.dir,e.intent.dir)}
@@ -42,6 +42,23 @@ function solve(){
   }
   const locked=E.initial();locked.player={x:7,y:3,dir:'right'};assert.equal(E.advance(locked,'right'),locked);
   locked.unlocks=['@'];const erased=E.advance(locked,'right');assert.equal(erased.map[3][8],' ');assert.equal(erased.turn,1);
+ });
+ await check('opponents investigate only what they saw and forget hidden positions',()=>{
+  const s=E.initial(),e=s.enemies[1];s.player={x:15,y:3,dir:'left'};
+  E.plan(s,e);assert.deepEqual(e.goal,{x:15,y:3});assert.equal(e.memory,4);
+  s.player={x:9,y:9,dir:'up'};E.plan(s,e);assert.deepEqual(e.goal,{x:15,y:3});
+  for(let i=0;i<4;i++)E.plan(s,e);assert.equal(e.goal,null);
+  const w=E.initial(),guard=w.enemies[1];w.map[3]=w.map[3].slice(0,12)+'#'+w.map[3].slice(13);w.player={x:15,y:3,dir:'left'};
+  assert.equal(E.sees(w,guard),false);E.plan(w,guard);assert.equal(guard.goal,null);
+ });
+ await check('junction exploration is not constrained to the former little patrol square',()=>{
+  let s=E.initial();s.player={x:1,y:11,dir:'up'};
+  const e=s.enemies[1],positions=[];
+  for(let turn=1;turn<=18;turn++){
+   const intent=e.intent;if(intent.type==='move'){e.x=intent.x;e.y=intent.y}else if(intent.type==='turn')e.dir=intent.dir;
+   s.turn=turn;e.intent=E.plan(s,e);positions.push([e.x,e.y]);
+  }
+  assert.ok(positions.some(([x,y])=>x>13||x<11||y>5||y<3));
  });
  const solution=solve();
  await check('the unmodified three-enemy board has a complete winning route',()=>{
