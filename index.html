@@ -1,0 +1,737 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover" />
+<title>UNTITLED.TXT v0.30 — 문자 사냥</title>
+<style>
+  :root{--ink:#242424;--faded:#848484;--line:#dededb;--paper:#fbfbfa;--bg:#eeefed;--accent:#252525}
+  *{box-sizing:border-box}html,body{margin:0;min-height:100%;font-family:Consolas,'Courier New',monospace;color:var(--ink);background:var(--bg)}
+  body{padding:clamp(10px,3.5vw,30px);touch-action:manipulation}
+  button{font:inherit;cursor:pointer}button:focus-visible,canvas:focus-visible{outline:2px solid #245d9c;outline-offset:3px}
+  .layout{max-width:1130px;margin:0 auto}
+  .eyebrow{font-size:12px;letter-spacing:.17em;color:#666;margin-bottom:13px}
+  .window{background:var(--paper);border:1px solid #c9c9c5;box-shadow:0 5px 0 #e1e1dd,0 18px 45px rgba(38,38,38,.06)}
+  .titlebar{height:43px;display:flex;align-items:center;justify-content:space-between;gap:12px;border-bottom:1px solid var(--line);background:#f7f7f5;padding:0 14px;font-size:13px}
+  .fileicon{border:1px solid #555;padding:1px 4px;color:#444;font-size:11px}
+  .title-left{display:flex;align-items:center;gap:10px;min-width:0}.title-left span:last-child{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+  .win-controls{display:flex;gap:18px;align-items:center;color:#777;font-size:15px}.win-controls span:last-child{font-size:17px}
+  .menubar{display:flex;flex-wrap:wrap;align-items:center;gap:6px;border-bottom:1px solid var(--line);padding:9px 12px}
+  .menu-btn{border:1px solid transparent;background:transparent;padding:5px 9px;font-size:13px;color:#555}.menu-btn:hover{background:#eeeeeb;border-color:#dfdfdc}
+  .menu-btn.active{color:#111;background:#e4e4e1;border-color:#aaa}
+  .menu-sep{width:1px;background:var(--line);height:18px;margin:0 4px}
+  .main{display:grid;grid-template-columns:minmax(0,1fr) 242px;min-height:615px}
+  .board-wrap{position:relative;padding:14px;border-right:1px solid var(--line);display:flex;flex-direction:column;justify-content:flex-start;min-width:0}
+  .board-shell{position:relative;border:1px solid #e5e5e2;background:#fff;overflow:hidden}
+  #board{width:100%;height:auto;display:block;image-rendering:auto;touch-action:none;user-select:none}
+  .hud-overlay{position:absolute;left:13px;top:11px;z-index:2;pointer-events:none;font-size:12px;color:#888;letter-spacing:.04em}
+  .hint-banner{min-height:37px;padding:11px 3px 0;font-size:12px;color:#565656;line-height:1.5}
+  .sidebar{padding:16px 15px;display:flex;flex-direction:column;gap:14px;font-size:13px}
+  .section-tag{font-size:11px;letter-spacing:.13em;color:#888;margin-bottom:9px}
+  .big-count{font-size:30px;letter-spacing:-.05em;line-height:1.1}
+  .subtle{color:#777;font-size:12px;line-height:1.6}.progress{border-top:1px solid #ddd;padding-top:16px}
+  .milestone{display:flex;align-items:center;justify-content:space-between;gap:8px;padding:9px 0;border-bottom:1px dashed #e5e5e5}
+  .token{width:28px;height:28px;display:grid;place-items:center;border:1px solid #b5b5b2;font-size:19px;background:#fff}
+  .milestone .description{flex:1;font-size:12px;line-height:1.5}.milestone .state{font-size:11px;color:#777}
+  .milestone.open .token{background:#262626;color:#fff;border-color:#262626}.milestone.open .state{color:#222}
+  .evolve-panel{border-top:1px solid #ddd;padding-top:14px}
+  .tactics-panel{border-top:1px solid #ddd;padding-top:14px}
+  .tactics-row{display:flex;align-items:center;justify-content:space-between;gap:8px;margin:7px 0;font-size:12px}
+  .tactics-type{font-weight:bold;min-width:18px;text-align:center;font-size:16px}
+  .combo-meter{height:5px;margin-top:7px;background:#e8e8e5;border-radius:4px;overflow:hidden}
+  .combo-meter i{display:block;height:100%;width:0%;background:#586f79;transition:width .1s linear}
+  .combo-label{font-size:12px;margin-top:5px;color:#626262}
+  .record-line{font-size:11px;color:#777;margin-top:5px}
+
+  .skin-controls{display:flex;gap:4px;margin:8px 0}
+  .skin-btn{flex:1;min-width:0;padding:7px 3px;background:#fff;border:1px solid #d4d4d0;color:#5e5e5e;font-size:11px}
+  .skin-btn.active{background:#252525;color:white;border-color:#252525}
+  .evo-meter{display:flex;gap:4px;margin:9px 0 5px}
+  .evo-meter span{height:5px;flex:1;background:#e7e7e4;border-radius:4px}
+  .evo-meter span.done{background:#4c6b7d}
+  .pigments{display:flex;gap:5px;min-height:15px;margin:8px 0}
+  .pigments i{width:10px;height:10px;border-radius:50%;border:1px solid rgba(0,0,0,.13);display:block}
+  .ink-panel{border-top:1px solid #ddd;padding-top:14px}
+  .ink-line{display:flex;gap:8px;align-items:center;justify-content:space-between;margin-bottom:7px}
+  .ink-leds{display:flex;gap:5px}
+  .ink-leds span{width:15px;height:15px;border:1px solid #9a9a9a;background:#fff;border-radius:2px}
+  .ink-leds span.filled{background:#373737;border-color:#373737;box-shadow:inset 0 0 0 2px #f2f2ef}
+  .write-btn{width:100%;padding:10px 8px;border:1px solid #282828;color:#fff;background:#292929;text-align:center;font-size:12px}
+  .write-btn:disabled{background:#ededeb;color:#999;border-color:#ddd;cursor:not-allowed}
+  .keycap{font-size:10px;padding:2px 4px;border:1px solid currentColor;border-radius:2px;opacity:.65}
+  .legend{display:flex;flex-direction:column;gap:9px;font-size:12px;color:#555;line-height:1.6}
+  .legend-line{display:flex;gap:12px;align-items:start}.legend-char{min-width:32px;font-size:18px;color:#222}
+  .bottom{margin-top:0;border-top:1px solid var(--line);padding-top:12px}
+  .statusbar{height:auto;min-height:32px;border-top:1px solid var(--line);display:flex;align-items:center;justify-content:space-between;gap:8px;padding:8px 13px;color:#777;font-size:11px}
+  .controls{display:none;padding:12px 16px 16px;border-top:1px solid var(--line);gap:14px;align-items:center;justify-content:center}
+  .dpad{display:grid;grid-template-columns:repeat(3,51px);grid-template-rows:repeat(2,43px);gap:5px;touch-action:none;user-select:none}
+  .dir{border:1px solid #c0c0bc;color:#333;background:#f8f8f6;font-size:21px;border-radius:4px;touch-action:none;user-select:none}.dir:active{background:#deded9}
+  .helptext{font-size:12px;line-height:1.7;color:#777;max-width:180px}
+  .touch-actions{display:flex;flex-direction:column;align-items:center;gap:6px}
+  .touch-write{width:94px;min-height:61px;font-size:15px;background:#292929;color:#fff;border:1px solid #333;border-radius:4px}
+  .touch-write:disabled{color:#999;border-color:#ddd;background:#efefec}
+  .touch-tip{max-width:105px;font-size:10px;color:#777;line-height:1.4;text-align:center}
+  .scrim{position:absolute;inset:0;background:rgba(255,255,255,.86);display:flex;align-items:center;justify-content:center;z-index:3;padding:20px}
+  .scrim.hidden{display:none}.dialog{width:min(440px,100%);background:#fff;border:1px solid #333;box-shadow:7px 7px 0 #ddd;padding:25px;max-height:92%;overflow:auto}
+  .dialog .meta{color:#888;font-size:11px;letter-spacing:.15em}.dialog h2{font-weight:500;line-height:1.3;font-size:24px;margin:10px 0 12px}
+  .dialog p{color:#555;line-height:1.85;font-size:13px;word-break:keep-all}.dialog ul{padding-left:20px;line-height:1.85;font-size:13px;color:#555}
+  .primary{background:#252525;border:1px solid #252525;color:white;padding:12px 17px;font-size:13px;margin-top:10px}.primary:hover{background:#444}
+  .secondary{background:#fff;border:1px solid #a8a8a5;padding:11px 14px;font-size:13px;margin:10px 0 0 8px}
+  .toast{position:absolute;z-index:4;bottom:30px;left:50%;transform:translateX(-50%);background:#202020;color:#fff;padding:10px 16px;font-size:12px;white-space:nowrap;max-width:95%;overflow:hidden;text-overflow:ellipsis;opacity:0;transition:opacity .22s;pointer-events:none}.toast.show{opacity:1}
+  .credit{font-size:11px;color:#888;text-align:right;padding-top:12px}
+  @media(max-width:970px){.main{grid-template-columns:minmax(0,1fr) 210px}.sidebar{padding:16px 13px}.board-wrap{padding:10px}}
+  @media(max-width:730px){.board-wrap{border-bottom:1px solid var(--line)}.controls{border-top:0;padding:11px 4px 12px}.helptext{display:none}.scrim{position:fixed;inset:0;z-index:50;padding:18px}.dialog{max-height:calc(100dvh - 36px);overflow:auto}body{padding:8px}.eyebrow{margin-bottom:8px}.main{display:flex;flex-direction:column}.board-wrap{border-right:0;border-bottom:1px solid var(--line);padding:8px}.sidebar{display:grid;grid-template-columns:1fr 1fr;gap:13px;padding:13px}.sidebar .bottom{grid-column:span 2;margin:0}.sidebar .progress{border-top:0;padding-top:0}.controls{display:flex}.hint-banner{font-size:11px;min-height:35px}.titlebar{height:36px}.dialog{padding:20px}.scrim{padding:10px}.statusbar{font-size:10px}}
+  @media(max-width:390px){.sidebar{grid-template-columns:1fr 1fr}.dpad{grid-template-columns:repeat(3,47px);grid-template-rows:repeat(2,40px)}.helptext{font-size:11px}}
+  @media(hover:none){.controls{display:flex}}
+  @media(prefers-reduced-motion:reduce){.toast{transition:none}}
+</style>
+</head>
+<body>
+<div class="layout">
+  <div class="eyebrow">PLAYABLE EXPERIMENT / 005</div>
+  <div class="window">
+    <div class="titlebar"><div class="title-left"><span class="fileicon">TXT</span><span>untitled.txt — 문자 사냥</span></div><div class="win-controls" aria-hidden="true"><span>−</span><span>□</span><span>×</span></div></div>
+    <div class="menubar">
+      <button class="menu-btn" id="btnRestart">새 게임</button>
+      <button class="menu-btn" id="btnHelp">게임 방법</button>
+      <div class="menu-sep"></div>
+      <button class="menu-btn" id="btnPause">일시정지 [P]</button>
+      <button class="menu-btn" id="btnMap">전체 지도 [TAB]</button>
+      <button class="menu-btn" id="btnSound">소리 켜기</button>
+    </div>
+    <div class="main">
+      <div class="board-wrap">
+        <div class="board-shell" id="boardShell">
+          <div class="hud-overlay" id="worldLabel">WORLD 01 · MONOCHROME</div>
+          <canvas id="board" width="696" height="552" tabindex="0" aria-label="문자 미로 게임. 방향키 또는 WASD로 이동합니다."></canvas>
+          <div id="scrim" class="scrim">
+            <div class="dialog" id="dialog" role="dialog" aria-labelledby="dialogTitle">
+              <div class="meta" id="dialogMeta">UNTITLED.TXT / V0.30</div>
+              <h2 id="dialogTitle">문자 하나로 시작한다.</h2>
+              <p id="dialogBody">방향키로 움직여 적의 뒤를 잡으세요. 적의 정면에서 만나면 바로 잡아먹힙니다.</p>
+              <ul id="dialogList"><li>적 <code>@</code>의 뒤를 잡으면 <code>@</code> 벽을 지울 수 있습니다.</li><li>직접 뚫은 통로는 적도 이용합니다. 바깥으로 갈수록 적이 많아집니다.</li><li>새 문자를 흡수할수록 같은 세계가 바깥으로 확장됩니다.</li></ul>
+              <button class="primary" id="btnPrimary">게임 시작 →</button>
+              <button class="secondary" id="btnSecondary" style="display:none">계속하기</button>
+            </div>
+          </div>
+          <div id="toast" class="toast" role="status" aria-live="polite"></div>
+        </div>
+        <div id="hint" class="hint-banner" aria-live="polite">적의 뒤를 노리세요. 앞에서 부딪치면 죽습니다.</div>
+        <div class="controls" aria-label="모바일 조작">
+          <div class="dpad">
+            <span></span><button class="dir" data-dir="up" aria-label="위로 이동">↑</button><span></span>
+            <button class="dir" data-dir="left" aria-label="왼쪽 이동">←</button>
+            <button class="dir" data-dir="down" aria-label="아래로 이동">↓</button>
+            <button class="dir" data-dir="right" aria-label="오른쪽 이동">→</button>
+          </div>
+          <div class="touch-actions"><button id="btnMobileWrite" class="touch-write" disabled>+ 쓰기</button><span class="touch-tip">앞쪽 한 칸에<br>임시 벽 만들기</span></div>
+          <div class="helptext">이동: 방향키 / WASD<br>벽 쓰기: SPACE / + 버튼<br>지도: TAB<br>R 재시작 · P 일시정지</div>
+        </div>
+      </div>
+      <aside class="sidebar">
+        <div>
+          <div class="section-tag">HUNTER / 사냥 기록</div>
+          <div class="big-count"><span id="killCount">0</span><span style="color:#aaa;font-size:17px"> / <span id="totalEnemies">5</span></span></div>
+          <div class="subtle" id="levelInfo">LV.01 · 이동속도 100%</div>
+          <div class="subtle" id="zoneInfo">중앙 미로</div>
+        </div>
+        <div class="tactics-panel">
+          <div class="section-tag">HUNT / 연속 사냥</div>
+          <div class="combo-label" id="comboLabel">연속 흡수 없음</div>
+          <div class="combo-meter"><i id="comboFill"></i></div>
+          <div class="record-line" id="recordLabel">최고 기록: 0마리</div>
+        </div>
+        <div class="progress">
+          <div class="section-tag">ABSORBED / 획득 문자</div>
+          <div class="milestone" id="milestoneAt"><span class="token">@</span><span class="description">@ 벽 지우기</span><span class="state">잠김</span></div>
+          <div class="milestone" id="milestoneAnd"><span class="token">&amp;</span><span class="description">&amp; 벽 지우기</span><span class="state">잠김</span></div>
+          <div class="milestone" id="milestonePct"><span class="token">%</span><span class="description">마지막 문자</span><span class="state">미획득</span></div>
+        </div>
+        <div class="evolve-panel">
+          <div class="section-tag">EVOLUTION / 내 도형 성장</div>
+          <div class="subtle" id="evoLabel">기본형 · 순수한 검은 입</div>
+          <div class="evo-meter" id="evoMeter" aria-label="성장 단계"><span></span><span></span><span></span><span></span><span></span></div>
+          <div class="pigments" id="pigments" aria-label="흡수한 색"></div>
+          <div class="section-tag" style="margin-top:12px">APPEARANCE / 외형 비교</div>
+          <div class="skin-controls" role="group" aria-label="플레이어 성장 디자인">
+            <button class="skin-btn active" data-skin="core" aria-pressed="true">코어형</button>
+            <button class="skin-btn" data-skin="rune" aria-pressed="false">문양형</button>
+            <button class="skin-btn" data-skin="trail" aria-pressed="false">잔상형</button>
+          </div>
+          <div class="subtle">색은 성장 기록입니다. 외형만 바뀌고 공격 판정은 동일합니다.</div>
+        </div>
+        <div class="ink-panel">
+          <div class="section-tag">WRITE / 미로 다시 쓰기</div>
+          <div class="ink-line"><span class="subtle" id="inkLabel">@를 먹으면 해금</span><div class="ink-leds" id="inkLeds"><span></span><span></span><span></span></div></div>
+          <button class="write-btn" id="btnWrite" disabled>+ 임시 벽 쓰기 <span class="keycap">SPACE</span></button>
+          <div class="subtle" style="margin-top:7px">앞쪽 한 칸을 8초간 막습니다. 적도 돌아갑니다.</div>
+        </div>
+        <div class="tactics-panel">
+          <div class="section-tag">ENEMY / 관찰할 행동</div>
+          <div class="tactics-row"><span class="tactics-type">@</span><span>순찰 · 교차로에서 방향 전환</span></div>
+          <div class="tactics-row"><span class="tactics-type">&amp;</span><span>추격 · 발견한 위치까지 접근</span></div>
+          <div class="tactics-row"><span class="tactics-type">%</span><span>매복 · 가는 방향을 앞질러 감</span></div>
+          <div class="subtle">? : 수색 중　! : 발견 · 공격 준비</div>
+        </div>
+        <details class="bottom">
+          <summary class="section-tag" style="cursor:pointer;color:#555;margin-bottom:9px">RULES / 규칙 펼쳐보기</summary>
+          <div class="legend">
+            <div class="legend-line"><span class="legend-char">&lt;</span><span>내 캐릭터. 벌어진 오른쪽으로 먹습니다</span></div>
+            <div class="legend-line"><span class="legend-char">@</span><span>적. 글자 끝과 터진 쪽이 정면</span></div>
+            <div class="legend-line"><span class="legend-char">###</span><span>부술 수 없는 벽</span></div>
+            <div class="legend-line"><span class="legend-char">@@@</span><span>흡수 후 지울 수 있는 벽</span></div>
+          </div>
+        </details>
+      </aside>
+    </div>
+    <div class="statusbar"><span id="statusCoords">Ln 12, Col 15</span><span id="statusActivity">삭제 ERASE → 기록 WRITE</span><span>UTF-8 · BUILD 0.30</span></div>
+  </div>
+  <div class="credit">© PROTOTYPE 0.30 — 지우고, 쓰고, 사냥한다</div>
+</div>
+<script>
+(()=>{'use strict';
+  const W=29,H=23,CELL=24,canvas=document.getElementById('board'),ctx=canvas.getContext('2d');
+  const dirs={up:{x:0,y:-1,ch:'v'},right:{x:1,y:0,ch:'<'},down:{x:0,y:1,ch:'^'},left:{x:-1,y:0,ch:'>'}}; // Glyph means open mouth, not arrow tip.
+  const names=Object.keys(dirs);
+  const $=id=>document.getElementById(id);
+  const state={map:[],revealed:[],revealAt:[],player:null,enemies:[],unlocks:new Set(),breached:new Set(),kills:0,stage:0,mode:'intro',held:null,lastPlayerStep:0,lastFrame:0,toastUntil:0,toastText:'',message:'',messageUntil:0,mute:true,particles:[],flash:0,absorbEvent:null,absorbed:[],trail:[],skin:'core',ink:0,walls:[],overview:false,writingAt:0,combo:0,bestCombo:0,lastKill:-Infinity,comboUntil:0,surgeUntil:0,notice:[]};
+  let audio=null;
+  const idx=(x,y)=>y*W+x;
+  const valid=(x,y)=>x>=0&&x<W&&y>=0&&y<H;
+  const tile=(x,y)=>valid(x,y)?state.map[y][x]:'#';
+  const setTile=(x,y,ch)=>{if(valid(x,y))state.map[y][x]=ch};
+  const carve=(x,y)=>setTile(x,y,' ');
+  const line=(x1,y1,x2,y2)=>{if(x1!==x2&&y1!==y2)throw new Error('Not orthogonal');const dx=Math.sign(x2-x1),dy=Math.sign(y2-y1);for(let x=x1,y=y1;;x+=dx,y+=dy){carve(x,y);if(x===x2&&y===y2)break}};
+  const rect=(x1,y1,x2,y2,fill)=>{for(let x=x1;x<=x2;x++){setTile(x,y1,fill);setTile(x,y2,fill)}for(let y=y1;y<=y2;y++){setTile(x1,y,fill);setTile(x2,y,fill)}};
+  function buildMap(){
+    state.map=Array.from({length:H},()=>Array(W).fill('#'));
+    // The outer world: concentric loops with multiple tactical shortcuts.
+    rect(2,2,26,20,' ');rect(4,4,24,18,' ');
+    line(14,2,14,20);line(2,11,26,11);
+    line(8,2,8,4);line(20,2,20,4);line(8,18,8,20);line(20,18,20,20);
+    line(4,7,4,15);line(24,7,24,15);
+    line(2,6,4,6);line(24,16,26,16);line(2,16,4,16);line(24,6,26,6);
+    // Outer perimeter of ring one; only & gates can connect these regions.
+    rect(5,4,23,18,'#');
+    rect(6,5,22,17,' ');rect(8,7,20,15,' ');
+    line(14,5,14,17);line(6,11,22,11);
+    line(8,5,8,7);line(20,5,20,7);line(8,15,8,17);line(20,15,20,17);
+    line(6,8,8,8);line(20,14,22,14);
+    // The starting maze never disappears. The @ wall is its only exit.
+    rect(9,7,19,15,'#');
+    rect(10,8,18,14,' ');line(14,8,14,14);line(10,11,18,11);
+    line(12,8,12,11);line(16,11,16,14);
+    // Exact one-cell gates. Nearby cells outside belong to the same map.
+    [[14,7],[19,11],[14,15],[9,11]].forEach(([x,y])=>setTile(x,y,'@'));
+    [[14,4],[23,11],[14,18],[5,11]].forEach(([x,y])=>setTile(x,y,'&'));
+    // A late-game shortcut; acquiring % has a genuine use on the existing world.
+    [[14,3],[14,19]].forEach(([x,y])=>setTile(x,y,'%'));
+    // Keep non-removable walls as the permanent skeleton of the maze.
+    for(let x=0;x<W;x++){setTile(x,0,'#');setTile(x,H-1,'#')}
+    for(let y=0;y<H;y++){setTile(0,y,'#');setTile(W-1,y,'#')}
+    state.revealed=Array(W*H).fill(false);
+    state.revealAt=Array(W*H).fill(0);
+    state.player={x:14,y:11,dir:'right',prevX:14,prevY:11,movedAt:0};
+    const spawns=[
+      // Initial zone: a stationary tutorial prey plus one slow opponent.
+      ['@',17,11,'right',0,999999,'tutorial'],
+      ['@',11,8,'left',0,880,'wander'],
+      // First short expansion. Several routes offer actual hunting choices.
+      ['&',20,8,'up',1,720,'hunter'],
+      ['@',8,5,'down',1,820,'wander'],
+      ['@',6,14,'right',1,920,'wander'],
+      ['&',21,17,'left',1,810,'ambusher'],
+      ['@',14,17,'up',1,960,'wander'],
+      // Outer ring: stronger mix, only activates after the & barrier is opened.
+      ['%',26,8,'down',2,690,'ambusher'],
+      ['&',4,4,'down',2,880,'wander'],
+      ['@',14,2,'right',2,930,'wander'],
+      ['%',2,16,'up',2,770,'ambusher'],
+      ['&',24,18,'left',2,900,'wander'],
+      ['@',14,20,'up',2,850,'hunter']
+    ];
+    state.enemies=spawns.map(([ch,x,y,dir,zone,speed,style],i)=>({id:i+1,ch,x,y,prevX:x,prevY:y,movedAt:0,dir,zone,speed,style,wake:0,seenUntil:0,goal:null,lastStep:0,alive:true}));
+    state.kills=0;state.stage=0;state.zoom=1.72;state.unlocks=new Set();state.breached=new Set();state.particles=[];state.flash=0;state.lastPlayerStep=0;state.lastFrame=0;state.held=null;state.absorbEvent=null;state.absorbed=[];state.trail=[];state.ink=0;state.walls=[];state.overview=false;state.writingAt=0;state.combo=0;state.bestCombo=0;state.lastKill=-Infinity;state.comboUntil=0;state.surgeUntil=0;state.notice=[];$('btnMap').classList.remove('active');$('btnMap').textContent='전체 지도 [TAB]';state.message='@ 적의 뒤에서 접근하세요. 입이 벌어진 방향이 공격 방향입니다.';state.messageUntil=Infinity;
+    reveal(0,true);updateUI();
+  }
+  function reveal(now,initial=false){
+    const q=[[state.player.x,state.player.y,0]],visited=new Set([idx(state.player.x,state.player.y)]);
+    const radius=initial?17:12;
+    while(q.length){const [x,y,d]=q.shift(),i=idx(x,y);
+      if(!state.revealed[i]){state.revealed[i]=true;state.revealAt[i]=initial?0:now}
+      if(d>=radius)continue;
+      for(const v of Object.values(dirs)){
+        const nx=x+v.x,ny=y+v.y;if(!valid(nx,ny))continue;
+        const ni=idx(nx,ny);if(!state.revealed[ni]){state.revealed[ni]=true;state.revealAt[ni]=initial?0:now}
+        if(tile(nx,ny)===' '&&!visited.has(ni)){visited.add(ni);q.push([nx,ny,d+1])}
+      }
+    }
+  }
+  function showMessage(message,ms=4000){state.message=message;state.messageUntil=ms===Infinity?Infinity:performance.now()+ms;$('hint').textContent=message}
+  function toast(message,ms=2050){state.toastText=message;state.toastUntil=performance.now()+ms;$('toast').textContent=message;$('toast').classList.add('show')}
+  function setSound(on){state.mute=!on;$('btnSound').textContent=on?'소리 끄기':'소리 켜기'}
+  function tone(freq=260,duration=.07,type='sine',volume=.025){if(state.mute)return;try{audio??=new (window.AudioContext||window.webkitAudioContext)();if(audio.state==='suspended')audio.resume();const o=audio.createOscillator(),g=audio.createGain();o.type=type;o.frequency.value=freq;const t=audio.currentTime;g.gain.setValueAtTime(volume,t);g.gain.exponentialRampToValueAtTime(.0001,t+duration);o.connect(g);g.connect(audio.destination);o.start(t);o.stop(t+duration)}catch(e){}}
+  function tickSound(){tone(170,.025,'triangle',.009)}
+  function isFloor(x,y){return tile(x,y)===' '}
+  function enemyAt(x,y){return state.enemies.find(e=>e.alive&&e.x===x&&e.y===y)}
+  function writeWall(now=performance.now()){
+    if(state.mode!=='playing')return false;
+    if(!state.unlocks.has('@')){toast('첫 @를 흡수해야 문자를 쓸 수 있어요.');return false}
+    if(!state.ink){toast('먹물이 부족해요. 적을 먹으면 +1');return false}
+    const d=dirs[state.player.dir],x=state.player.x+d.x,y=state.player.y+d.y;
+    if(!valid(x,y)||tile(x,y)!==' '||enemyAt(x,y)){toast('빈 통로에만 + 벽을 쓸 수 있어요.');return false}
+    state.ink--;state.walls.push({x,y,until:now+8000,from:now});setTile(x,y,'+');state.writingAt=now;
+    // A written mark is audible: nearby opponents inspect the writer's last position.
+    for(const e of state.enemies){if(!e.alive||e.zone>state.stage||e.style==='tutorial')continue;
+      if(Math.abs(e.x-x)+Math.abs(e.y-y)<=7){e.goal={x:state.player.x,y:state.player.y};e.seenUntil=now+2400;e.alertUntil=now+1200}
+    }
+    tone(520,.11,'square',.019);toast('+ 벽 생성 · 적이 다른 길로 돌아옵니다.',1700);
+    showMessage('길을 막았다면 다른 순환로로 돌아가 적의 등을 노려 보세요.',3600);
+    updateUI();return true;
+  }
+  function updateWalls(now){
+    if(state.mode!=='playing')return;
+    const alive=[];
+    for(const wall of state.walls){if(now>=wall.until){if(tile(wall.x,wall.y)==='+')setTile(wall.x,wall.y,' ')}else alive.push(wall)}
+    state.walls=alive;
+  }
+  function pigment(ch){return {'@':'#5D94B7','&':'#C48B60','%':'#9C76B4'}[ch]||'#555'}
+  function saveRecord(){
+    try{let old=JSON.parse(localStorage.getItem('text-hunter-v030-best')||'{}');
+      const next={kills:Math.max(old.kills||0,state.kills),combo:Math.max(old.combo||0,state.bestCombo)};
+      localStorage.setItem('text-hunter-v030-best',JSON.stringify(next));
+    }catch(err){} // local-file privacy settings may block storage
+  }
+  function loadRecord(){
+    try{return JSON.parse(localStorage.getItem('text-hunter-v030-best')||'{}')}
+    catch(err){return {}}
+  }
+  function finalizeAbsorb(e,now){
+    e.alive=false;state.kills++;
+    state.combo=now-state.lastKill<5000?Math.min(9,state.combo+1):1;
+    state.bestCombo=Math.max(state.bestCombo,state.combo);
+    state.lastKill=now;state.comboUntil=now+5000;
+    if(state.combo>=2){state.surgeUntil=now+3500;}
+const first=!state.unlocks.has(e.ch);state.unlocks.add(e.ch);
+    state.ink=Math.min(3,state.ink+1);
+    if(state.combo===3){state.ink=Math.min(3,state.ink+1);toast('3연속! 먹물 보너스 +1',1500)}
+
+    state.absorbed.push({ch:e.ch,color:pigment(e.ch)});
+    state.flash=now+230;
+    for(let i=0;i<13;i++){const a=Math.random()*Math.PI*2,s=10+Math.random()*48;state.particles.push({x:e.x*CELL+CELL/2,y:e.y*CELL+CELL/2,vx:Math.cos(a)*s,vy:Math.sin(a)*s,from:now,life:470+Math.random()*250,ch:e.ch})}
+    tone(340,.12,'triangle',.035);setTimeout(()=>tone(460,.17,'sine',.025),75);
+    if(first&&e.ch==='@'){toast('@ 흡수! 이제 @ 벽을 먹을 수 있습니다.');showMessage('중앙 둘레의 @ 벽으로 이동해 길을 직접 뚫어 보세요.',7000)}
+    else if(first&&e.ch==='&'){toast('& 흡수! 더 바깥쪽으로 갈 수 있습니다.');showMessage('이제 & 벽을 지워 미로의 바깥 둘레를 열 수 있습니다.',7000)}
+    else if(first&&e.ch==='%'){toast('% 흡수! 문자 수집 완료.');showMessage('새로운 능력을 얻었습니다. 남은 적도 사냥해 보세요.',7000)}
+    else toast(e.ch+' 흡수 · '+(state.combo>=2?state.combo+'연속! 빠른 발동':'먹물 +1 · 속도 증가'));
+    updateUI();
+    if(state.kills===state.enemies.length){saveRecord();state.mode='won';state.held=null;openDialog('win')}
+    else state.mode='playing';
+  }
+  function startAbsorb(e,now){
+    if(state.absorbEvent)return;
+    state.absorbEvent={enemyId:e.id,from:now,until:now+290,ch:e.ch,x:e.x,y:e.y,ox:state.player.x,oy:state.player.y};
+    state.mode='absorbing';
+    state.held=null;
+    tone(250,.05,'triangle',.02);
+  }
+  function die(now,why='정면에서 잡혔습니다.'){
+    if(state.mode!=='playing')return;
+    saveRecord();state.mode='dead';state.held=null;state.flash=now+450;
+    tone(150,.28,'sawtooth',.048);
+    showMessage(why,Infinity);
+    openDialog('dead');
+  }
+  function canEat(e,oldX,oldY){const d=dirs[e.dir];return oldX===e.x-d.x&&oldY===e.y-d.y}
+  function movePlayer(dirName,now=performance.now()){
+    if(state.mode!=='playing')return false;
+    const d=dirs[dirName];if(!d)return false;
+    state.lastPlayerStep=now;
+    const p=state.player;const ox=p.x,oy=p.y;p.dir=dirName;
+    const x=ox+d.x,y=oy+d.y;if(!valid(x,y))return false;
+    const e=enemyAt(x,y);
+    if(e){if(canEat(e,ox,oy)){startAbsorb(e,now)}else{die(now,'정면 또는 측면에서 부딪쳤습니다. 반드시 뒤에서 접근하세요.');updateUI();return false}}
+    else{
+      const t=tile(x,y);
+      if(t==='#'){tone(120,.045,'triangle',.012);return false}
+      if(t!==' '&&t!=='+'&&!state.unlocks.has(t)){toast(t+' 적을 흡수해야 '+t+' 벽을 먹을 수 있습니다.',1500);tone(110,.06,'triangle',.017);return false}
+      if(t!==' '){setTile(x,y,' ');tone(250,.095,'square',.024);if(t==='+'){state.walls=state.walls.filter(w=>w.x!==x||w.y!==y);toast('내가 쓴 벽을 지웠습니다.',800)}else if(!state.breached.has(t)){state.breached.add(t);state.stage=Math.max(state.stage,t==='@'?1:2);state.enemies.forEach(en=>{
+        if(en.zone<=state.stage&&!en.wake){
+          en.wake=now+1100+(en.id%4)*450;
+          if(en.zone===state.stage&&en.style!=='tutorial'&&Math.abs(en.x-x)+Math.abs(en.y-y)<7){
+            en.goal={x,y};en.seenUntil=now+5200;en.searchUntil=now+5200;
+          }
+        }
+      });toast(t+' 벽 삭제 · 새로운 미로 개방',2500);showMessage('새로 열린 통로로 적도 들어옵니다. 기존 미로를 활용해 뒤를 잡으세요.',5500);updateUI()}else{toast('벽을 지웠습니다.',650)}}
+      state.trail.push({x:ox,y:oy,from:now,dir:p.dir});
+      p.prevX=ox;p.prevY=oy;p.movedAt=now;p.x=x;p.y=y;
+      tickSound();
+    }
+    reveal(now);
+    state.lastPlayerStep=now;updateUI();return true;
+  }
+  function hasStraightSight(e){
+    const p=state.player,d=dirs[e.dir],dx=p.x-e.x,dy=p.y-e.y;
+    const dist=Math.abs(dx)+Math.abs(dy);
+    if(dist>6||dist===0)return false;
+    if(d.x!==0){if(dy!==0||Math.sign(dx)!==d.x)return false}
+    else{if(dx!==0||Math.sign(dy)!==d.y)return false}
+    for(let j=1;j<dist;j++)if(!isFloor(e.x+d.x*j,e.y+d.y*j))return false;
+    return true;
+  }
+  function navigate(e,target){
+    const start=idx(e.x,e.y),targetI=idx(target.x,target.y),queue=[start],came=new Map([[start,null]]);
+    let head=0;
+    while(head<queue.length){const i=queue[head++];if(i===targetI)break;
+      const x=i%W,y=Math.floor(i/W);
+      for(const name of ['up','right','down','left']){const d=dirs[name],nx=x+d.x,ny=y+d.y,ni=idx(nx,ny);if(valid(nx,ny)&&isFloor(nx,ny)&&!came.has(ni)&&(!enemyAt(nx,ny)||(nx===target.x&&ny===target.y))){came.set(ni,{i,dir:name});queue.push(ni)}}
+    }
+    if(!came.has(targetI))return null;
+    let cur=targetI,first=null;while(cur!==start){const n=came.get(cur);first=n.dir;cur=n.i}
+    return first;
+  }
+  function aiStep(e,now){
+    if(state.mode!=='playing'||!e.alive||e.zone>state.stage||now<e.wake||e.style==='tutorial')return;
+    if(Math.abs(e.x-state.player.x)+Math.abs(e.y-state.player.y)>12)return;
+    if(hasStraightSight(e)){
+      // Readable personalities: the % creature anticipates two tiles ahead;
+      // the & creature pursues the last observed position, never omnisciently.
+      let goal={x:state.player.x,y:state.player.y};
+      if(e.style==='ambusher'){
+        const d=dirs[state.player.dir];
+        for(let n=2;n>=1;n--){const ax=state.player.x+d.x*n,ay=state.player.y+d.y*n;
+          if(isFloor(ax,ay)){goal={x:ax,y:ay};break}}
+      }
+      e.goal=goal;e.seenUntil=now+3200;e.alertUntil=now+1100;
+    }else if((!e.goal||now>=e.seenUntil)&&e.style!=='tutorial'){
+      // A recent moving trace is a clue, not the player's real-time position.
+      const nearby=state.trail.slice().reverse().find(t=>now-t.from<1950&&Math.abs(t.x-e.x)+Math.abs(t.y-e.y)<=4&&isFloor(t.x,t.y));
+      if(nearby){e.goal={x:nearby.x,y:nearby.y};e.seenUntil=now+1600;e.searchUntil=now+1600}
+    }
+    const choices=names.filter(name=>{const d=dirs[name];const x=e.x+d.x,y=e.y+d.y;return isFloor(x,y)&&!enemyAt(x,y)});
+    if(!choices.length)return;
+    let direction=null;
+    if(e.goal&&now<e.seenUntil){
+      direction=navigate(e,e.goal);
+      if(!direction || (e.goal.x===e.x&&e.goal.y===e.y)){e.goal=null;e.seenUntil=0}
+    }
+    if(!direction){
+      // Wanderers favour forward movement; hunters investigate junctions.
+      const forward=choices.includes(e.dir);
+      if(forward&&Math.random()<(e.style==='wander'?.76:.55))direction=e.dir;
+      else{
+        const opposite=names.find(name=>dirs[name].x===-dirs[e.dir].x&&dirs[name].y===-dirs[e.dir].y);
+        const preferred=choices.filter(n=>n!==opposite);
+        const options=preferred.length?preferred:choices;
+        direction=options[Math.floor(Math.random()*options.length)];
+      }
+    }
+    if(!direction)return;
+    if(e.dir!==direction){e.dir=direction;return} // A turn is visibly telegraphed for one full AI beat.
+    const d=dirs[e.dir],nx=e.x+d.x,ny=e.y+d.y;
+    if(!isFloor(nx,ny))return;
+    if(nx===state.player.x&&ny===state.player.y){
+      // Seeing the jaw one cell away gives one enemy beat to dodge. Contact remains fatal.
+      if(!e.windup || now-e.windup>e.speed*2.2){
+        e.windup=now;e.alertUntil=now+e.speed*1.4;
+        e.goal={x:state.player.x,y:state.player.y};e.seenUntil=now+e.speed*1.5;
+        return;
+      }
+      if(now-e.windup>=e.speed*.65){die(now,'적의 입이 닿았습니다. 경고 !가 보이면 방향을 바꿔 도망치세요.');return}
+      return;
+    }
+    e.windup=0;
+    if(enemyAt(nx,ny))return;
+    e.prevX=e.x;e.prevY=e.y;e.movedAt=now;e.x=nx;e.y=ny;
+  }
+  function updateUI(){
+    $('killCount').textContent=String(state.kills);$('totalEnemies').textContent=String(state.enemies.length);
+    $('levelInfo').textContent='LV.'+String(1+state.unlocks.size).padStart(2,'0')+' · 이동속도 '+Math.round(Math.min(140,100+state.kills*7)+(performance.now()<state.surgeUntil?15:0))+'%';
+    $('zoneInfo').textContent=['중앙 미로','첫 번째 외곽 개방','두 번째 외곽 개방'][state.stage];
+    $('worldLabel').textContent='WORLD 0'+(state.stage+1)+' · '+(state.unlocks.size===0?'MONOCHROME':'ABSORB / '+[...state.unlocks].join(' '));
+    $('statusCoords').textContent='Ln '+(state.player.y+1)+', Col '+(state.player.x+1);
+    $('inkLabel').textContent=state.unlocks.has('@')?'먹물 '+state.ink+' / 3 · 적을 먹어 충전':'첫 @를 먹으면 해금';
+    $('btnWrite').disabled=(!state.unlocks.has('@')||!state.ink||state.mode==='dead'||state.mode==='won');$('btnMobileWrite').disabled=$('btnWrite').disabled;
+    [...$('inkLeds').children].forEach((el,i)=>el.classList.toggle('filled',i<state.ink));
+    $('statusActivity').textContent=state.stage===0?'중앙에서 시작':state.stage===1?'1차 확장 · @ 구역': '2차 확장 · & 구역';
+    const record=loadRecord();
+    $('recordLabel').textContent='최고 기록: '+Math.max(record.kills||0,state.kills)+'마리 · 최대 연속 '+Math.max(record.combo||0,state.bestCombo);
+    const k=state.kills;
+    const steps=[1,3,5,8,11];
+    const stage=steps.filter(v=>k>=v).length;
+    const labels=['기본형 · 순수한 검은 입','코어 각성 · 색을 품는다','문자 무늬 · 턱선이 변한다','타이핑 잔상 · 이동 기록','광륜 · 작은 장식이 생긴다','완전체 · 색이 하나로 이어진다'];
+    $('evoLabel').textContent=labels[stage]+' ('+k+'킬)';
+    [...$('evoMeter').children].forEach((el,i)=>el.classList.toggle('done',k>=steps[i]));
+    const dots=$('pigments');dots.replaceChildren();
+    for(const a of state.absorbed){const dot=document.createElement('i');dot.style.background=a.color;dot.title=a.ch+' 흡수';dots.append(dot)}
+
+    for(const [id,ch] of [['milestoneAt','@'],['milestoneAnd','&'],['milestonePct','%']]){
+      const row=$(id),yes=state.unlocks.has(ch);row.classList.toggle('open',yes);row.querySelector('.state').textContent=yes?'획득':'잠김';
+    }
+  }
+  function openDialog(type){
+    const content={
+      intro:{meta:'UNTITLED.TXT / V0.30',title:'문자 하나로 시작한다.',body:'방향키로 움직여 적의 뒤를 잡으세요. 입이 벌어진 방향이 공격 방향입니다. 적의 등 뒤에서 먹으면 색과 능력이 내 몸에 쌓입니다.',list:['첫 번째 @의 열린 꼬리는 오른쪽을 향합니다. 왼쪽에서 다가가면 흡수할 수 있어요.','@를 잡으면 @ 벽을 먹어 길을 만들 수 있습니다.','@를 먹으면 SPACE로 + 벽을 쓸 수 있습니다. 연속 사냥하면 잠깐 더 빨라져요.'],primary:'게임 시작 →'},
+      help:{meta:'HOW TO PLAY',title:'사냥 · 흡수 · 개척',body:'방향키 또는 WASD로 움직입니다. 적의 뒤쪽 한 칸에서 적에게 들어가면 흡수합니다. 입이 벌어진 쪽이나 옆에서 충돌하면 패배합니다.',list:['캐릭터의 열린 쪽 또는 글자 꼬리 방향이 그 캐릭터의 정면입니다.','@ → @ 벽, & → & 벽. 문자마다 새로운 길이 열립니다.','@를 먹은 뒤 SPACE로 앞쪽 빈 칸에 + 벽 쓰기. 8초 후 사라지고 먹물 1개를 소비합니다.','# 벽은 영원히 남으며, %를 먹으면 외곽 지름길을 열 수 있습니다.','R 재시작 · P 일시정지 · TAB 전체 지도 · 모바일 방향키 또는 스와이프.', '추적 중 !, 수색 중 ? 표시로 상대 행동을 읽으세요.'],primary:'계속하기'},
+      dead:{meta:'GAME OVER',title:'이번엔 내가 먹혔다.',body:'정면이나 측면은 위험합니다. 상대의 뒤로 돌아가려면 순환로와 코너를 이용하세요.',list:['흡수 기록: '+state.kills+' / '+state.enemies.length,'다음 시도에서는 적이 몸을 돌리는 시간도 노려 보세요.'],primary:'다시 시작 ↻'},
+      win:{meta:'WORLD CLEAR',title:'이 세계를 전부 먹었다.',body:'처음엔 문자 하나였지만, 적을 흡수하고 벽을 지워 세계를 직접 확장했습니다.',list:['흡수한 적: '+state.kills,'획득 문자: '+[...state.unlocks].join(' ') ,'이 미로의 핵심 재미가 검증됐는지 판단해 보세요.'],primary:'한 번 더 플레이 ↻'},
+      pause:{meta:'PAUSED',title:'일시정지',body:'코너를 돌아 상대의 등 뒤로 접근하세요.',list:['방향키 / WASD 이동','P 를 눌러 재개할 수 있습니다.'],primary:'계속하기'}
+    }[type];
+    state.dialogType=type;$('dialogMeta').textContent=content.meta;$('dialogTitle').textContent=content.title;$('dialogBody').textContent=content.body;
+    $('dialogList').innerHTML='';for(const item of content.list){const li=document.createElement('li');li.textContent=item;$('dialogList').append(li)}
+    $('btnPrimary').textContent=content.primary;$('btnSecondary').style.display='none';$('scrim').classList.remove('hidden');
+  }
+  function closeDialog(){if(state.mode==='dead'||state.mode==='won'){buildMap()}state.mode='playing';$('scrim').classList.add('hidden');const n=performance.now();state.enemies.forEach(e=>{e.wake=Math.max(e.wake,n+1500);e.lastStep=n});state.lastPlayerStep=n;canvas.focus({preventScroll:true})}
+  function mouthOpen(now,lastStep,base=1.02,boost=.24){
+    // Each grid step makes the mouth open-then-close once; the idle gape remains wide.
+    const age=now-lastStep;
+    const phase=age>=150?0:Math.sin(Math.PI*Math.max(0,age)/150);
+    return base+boost*phase;
+  }
+  function mouthGeometry(cx,cy,dir,open,size){
+    const d=dirs[dir];
+    const px=-d.y,py=d.x; // a perpendicular vector to the direction of the OPEN side
+    const backX=cx-d.x*size*.51,backY=cy-d.y*size*.51;
+    const frontX=cx+d.x*size*.52,frontY=cy+d.y*size*.52;
+    const gap=size*.45*open;
+    return {backX,backY,upX:frontX+px*gap,upY:frontY+py*gap,downX:frontX-px*gap,downY:frontY-py*gap};
+  }
+  function drawMouth(cx,cy,dir,open,color,size=17,lineWidth=4.1){
+    const m=mouthGeometry(cx,cy,dir,open,size);
+    ctx.strokeStyle=color;ctx.lineWidth=lineWidth;ctx.lineCap='round';ctx.lineJoin='round';
+    ctx.beginPath();ctx.moveTo(m.upX,m.upY);ctx.lineTo(m.backX,m.backY);ctx.lineTo(m.downX,m.downY);ctx.stroke();
+  }
+  // Typography-inspired monsters: @ winds around its "a" eye and leaves an open tail.
+  // All species rotate their own silhouette toward the facing direction.
+  function drawEnemyGlyph(cx,cy,e,now){
+    const blink=state.absorbEvent&&state.absorbEvent.enemyId===e.id;
+    const age=blink?now-state.absorbEvent.from:0;
+    if(blink&&Math.floor(age/49)%2===1)return;
+    const t=blink?Math.min(1,age/290):0;
+    const scale=blink?1-t*.78:1;
+    const fade=blink?Math.max(.22,1-t*.72):1;
+    const angle={right:0,down:Math.PI/2,left:Math.PI,up:-Math.PI/2}[e.dir];
+    ctx.save();
+    const toP=blink?Math.min(.58,t*.58):0;
+    const targetX=blink?state.absorbEvent.ox:0,targetY=blink?state.absorbEvent.oy:0;
+    ctx.translate(cx+(targetX-e.x)*CELL*toP,cy+(targetY-e.y)*CELL*toP);
+    ctx.rotate(angle);ctx.scale(scale,scale);ctx.globalAlpha=fade;
+    const tone=e.ch==='@'?'#51565C':e.ch==='&'?'#806449':'#8B7198';
+    ctx.lineCap='round';ctx.lineJoin='round';
+    if(e.ch==='@'){
+      // The right-hand opening is the natural unfinished end of the @ spiral.
+      const breathe=mouthOpen(now,e.lastStep,.84,.12);
+      const aperture=.60*breathe;
+      ctx.strokeStyle=tone;ctx.lineWidth=3.1;
+      ctx.beginPath();ctx.arc(-1.1,0,9.5,aperture,Math.PI*2-aperture);ctx.stroke();
+      // The inner lowercase 'a' doubles as an eye, with a living pupil.
+      ctx.strokeStyle=tone;ctx.lineWidth=2.3;
+      ctx.beginPath();ctx.arc(-2.5,0.0,3.5,-.3,Math.PI*1.75);ctx.stroke();
+      ctx.beginPath();ctx.moveTo(.7,-2.2);ctx.quadraticCurveTo(4.7,-5.5,7.0,-2.6);ctx.stroke();
+      ctx.fillStyle='#222';ctx.beginPath();ctx.arc(-2.5,-.4,1.35,0,Math.PI*2);ctx.fill();
+    }else if(e.ch==='&'){
+      // Ampersand's terminal strokes become a small open jaw without erasing its body.
+      ctx.font='bold 22px Georgia, "Times New Roman", serif';ctx.textAlign='center';ctx.textBaseline='middle';ctx.fillStyle=tone;ctx.fillText('&',-2,0);
+      ctx.strokeStyle=tone;ctx.lineWidth=2.4;
+      ctx.beginPath();ctx.moveTo(3,-4.6);ctx.quadraticCurveTo(7,-8,9,-8);ctx.moveTo(4,4.6);ctx.quadraticCurveTo(7,7,9,7);ctx.stroke();
+      ctx.fillStyle='#252525';ctx.beginPath();ctx.arc(-2,-3,1.1,0,Math.PI*2);ctx.fill();
+    }else{
+      // Percent sign: two round eyes and a slash that splits into jaws at the leading end.
+      ctx.font='bold 21px Georgia, "Times New Roman", serif';ctx.textAlign='center';ctx.textBaseline='middle';ctx.fillStyle=tone;ctx.fillText('%',-2,0);
+      ctx.strokeStyle=tone;ctx.lineWidth=2.5;
+      ctx.beginPath();ctx.moveTo(2,-2);ctx.lineTo(10,-5.7);ctx.moveTo(2,2);ctx.lineTo(10,5.7);ctx.stroke();
+    }
+    ctx.restore();
+  }
+  function drawPlayerEvolution(cx,cy,dir,now){
+    const k=state.kills, d=dirs[dir], perp={x:-d.y,y:d.x};
+    const eat=state.absorbEvent;
+    const opening=eat?(now-eat.from<190?1.38:.96):mouthOpen(now,state.lastPlayerStep,1.0,.26);
+    const selected=state.skin;
+    const last=state.absorbed.at(-1),color=last?last.color:'#181818';
+    // Size stays fixed through the whole run. Evolution is made of typography, tint and ink.
+    if(k>=8){
+      ctx.save();ctx.globalAlpha=.24+.1*Math.sin(now/190);
+      ctx.strokeStyle=color;ctx.lineWidth=.85;
+      ctx.beginPath();ctx.arc(cx-d.x*3,cy-d.y*3,10,0,Math.PI*2);ctx.stroke();ctx.restore();
+    }
+    const bodyColor=k>=11?color:'#151515';
+    drawMouth(cx,cy,dir,opening,bodyColor,15.4,3.6);
+    if(k===0)return;
+    ctx.save();
+    // Interior color core lives on the hinge side, and does not clutter the open mouth.
+    const hx=cx-d.x*3,hy=cy-d.y*3;
+    if(selected==='core'){
+      ctx.fillStyle=color;ctx.beginPath();ctx.arc(hx,hy,Math.min(3.8,2.0+k*.16),0,Math.PI*2);ctx.fill();
+      ctx.fillStyle='#fff';ctx.beginPath();ctx.arc(hx-.7,hy-.8,.8,0,Math.PI*2);ctx.fill();
+    }else if(selected==='rune'){
+      ctx.strokeStyle=color;ctx.lineWidth=1.3;
+      for(let j=0;j<Math.min(3,Math.ceil(k/3));j++){
+        const pos=2+j*2.5;
+        ctx.beginPath();ctx.moveTo(cx+d.x*pos+perp.x*1.5,cy+d.y*pos+perp.y*1.5);
+        ctx.lineTo(cx+d.x*(pos+1)+perp.x*3.8,cy+d.y*(pos+1)+perp.y*3.8);ctx.stroke();
+      }
+    }else{
+      ctx.fillStyle=color;
+      for(let j=0;j<Math.min(3,Math.ceil(k/2));j++){
+        const q=5+j*2.2;
+        ctx.beginPath();ctx.arc(cx-d.x*q,cy-d.y*q,Math.max(.7,1.7-j*.3),0,Math.PI*2);ctx.fill();
+      }
+    }
+    if(k>=3){
+      // Inherited ink gathers on the upper and lower edges of the mouth.
+      const m=mouthGeometry(cx,cy,dir,opening,15.4);
+      ctx.strokeStyle=color;ctx.lineWidth=1.25;ctx.globalAlpha=.9;
+      for(const [tx,ty] of [[m.upX,m.upY],[m.downX,m.downY]]){
+        ctx.beginPath();ctx.moveTo(hx,hy);ctx.lineTo(hx+(tx-hx)*.75,hy+(ty-hy)*.75);ctx.stroke();
+      }
+    }
+    if(k>=5){
+      const unique=[...new Set(state.absorbed.map(a=>a.ch))];
+      unique.forEach((glyph,i)=>{
+        const col=pigment(glyph),side=i%2===0?1:-1,r=4+Math.floor(i/2)*3;
+        ctx.fillStyle=col;ctx.beginPath();ctx.arc(hx+d.x*(1+i*1.4)+perp.x*r*side,hy+d.y*(1+i*1.4)+perp.y*r*side,1.15,0,Math.PI*2);ctx.fill();
+      });
+    }
+    ctx.restore();
+  }
+  function renderTrail(now){
+    const count=state.kills;
+    const showFor=count>=5?(state.skin==='trail'?950:600):(count>0&&state.skin==='trail'?410:0);
+    if(!showFor)return;
+    state.trail=state.trail.filter(t=>now-t.from<showFor);
+    ctx.save();ctx.textAlign='center';ctx.textBaseline='middle';ctx.font='bold 15px Consolas,monospace';
+    const color=state.absorbed.at(-1)?.color||'#777';
+    for(const t of state.trail){const age=now-t.from;ctx.globalAlpha=Math.max(0,.50*(1-age/showFor));ctx.fillStyle=color;
+      ctx.fillText(state.skin==='trail'?':':'.',(t.x+.5)*CELL,(t.y+.5)*CELL);
+    }
+    ctx.restore();
+  }
+  document.querySelectorAll('.skin-btn').forEach(btn=>btn.addEventListener('click',()=>{
+    state.skin=btn.dataset.skin;
+    document.querySelectorAll('.skin-btn').forEach(b=>{const on=b===btn;b.classList.toggle('active',on);b.setAttribute('aria-pressed',String(on))});
+  }));
+  $('btnPrimary').onclick=closeDialog;
+  $('btnHelp').onclick=()=>{if(state.mode==='dead'||state.mode==='won')return;state.held=null;state.mode='paused';openDialog('help')};
+  $('btnRestart').onclick=()=>{buildMap();state.mode='playing';$('scrim').classList.add('hidden');state.enemies.forEach(e=>e.wake=performance.now()+1500);canvas.focus({preventScroll:true});toast('새 게임을 시작했습니다.',1200)};
+  $('btnPause').onclick=()=>{if(state.mode==='playing'){state.mode='paused';state.held=null;openDialog('pause')}else if(state.mode==='paused')closeDialog()};
+  $('btnSound').onclick=()=>setSound(state.mute);
+  $('btnWrite').onclick=()=>writeWall();$('btnMobileWrite').onclick=()=>writeWall();
+  $('btnMap').onclick=()=>{state.overview=!state.overview;$('btnMap').classList.toggle('active',state.overview);$('btnMap').textContent=state.overview?'원래 시점 [TAB]':'전체 지도 [TAB]'};
+  function inputDir(key){return {ArrowUp:'up',KeyW:'up',ArrowRight:'right',KeyD:'right',ArrowDown:'down',KeyS:'down',ArrowLeft:'left',KeyA:'left'}[key]}
+  document.addEventListener('keydown',event=>{
+    const direction=inputDir(event.code);
+    if(direction){event.preventDefault();if(state.mode==='playing'){if(state.held!==direction){state.held=direction;movePlayer(direction)} }return}
+    if(event.code==='Space'&&state.mode==='playing'){event.preventDefault();writeWall();return}
+    if(event.code==='Tab'){event.preventDefault();$('btnMap').click();return}
+    if(event.code==='KeyR'){event.preventDefault();$('btnRestart').click()}
+    if(event.code==='KeyP'||event.code==='Escape'){event.preventDefault();$('btnPause').click()}
+    if((event.code==='Enter'||event.code==='Space')&&state.mode!=='playing'){event.preventDefault();$('btnPrimary').click()}
+  });
+  document.addEventListener('keyup',event=>{const d=inputDir(event.code);if(d&&state.held===d)state.held=null});
+  window.addEventListener('blur',()=>{state.held=null});
+  for(const b of document.querySelectorAll('.dir')){
+    b.addEventListener('pointerdown',ev=>{ev.preventDefault();b.setPointerCapture(ev.pointerId);const d=b.dataset.dir;if(state.mode==='playing'){state.held=d;movePlayer(d)}});
+    b.addEventListener('pointerup',()=>{state.held=null});b.addEventListener('pointercancel',()=>{state.held=null});b.addEventListener('lostpointercapture',()=>{state.held=null});
+  }
+  let touchStart=null;
+  canvas.addEventListener('touchstart',ev=>{if(ev.touches.length===1)touchStart={x:ev.touches[0].clientX,y:ev.touches[0].clientY}},{passive:true});
+  canvas.addEventListener('touchend',ev=>{if(!touchStart||!ev.changedTouches.length)return;const dx=ev.changedTouches[0].clientX-touchStart.x,dy=ev.changedTouches[0].clientY-touchStart.y;touchStart=null;if(Math.max(Math.abs(dx),Math.abs(dy))<15)return;movePlayer(Math.abs(dx)>Math.abs(dy)?(dx>0?'right':'left'):(dy>0?'down':'up'))},{passive:true});
+  function render(now){
+    const p=state.player;
+    ctx.fillStyle='#ffffff';ctx.fillRect(0,0,W*CELL,H*CELL);
+    // The original central maze stays fixed, while the camera gently reveals more of its perimeter.
+    const targetZoom=state.overview?1:[1.72,1.22,1][state.stage];
+    state.zoom=state.zoom===undefined?targetZoom:state.zoom+(targetZoom-state.zoom)*0.065;
+    ctx.save();
+    ctx.translate(canvas.width/2,canvas.height/2);
+    ctx.scale(state.zoom,state.zoom);
+    ctx.translate(-canvas.width/2,-canvas.height/2);
+    ctx.textAlign='center';ctx.textBaseline='middle';ctx.font='19px Consolas, "Courier New", monospace';
+    const hasAt=state.unlocks.has('@'),hasAnd=state.unlocks.has('&');
+    for(let y=0;y<H;y++)for(let x=0;x<W;x++){
+      const i=idx(x,y),t=tile(x,y);if(!state.revealed[i]||t===' ')continue;
+      const alpha=state.revealAt[i]===0?1:Math.min(1,Math.max(0,(now-state.revealAt[i])/350));
+      ctx.globalAlpha=alpha;
+      ctx.fillStyle=t==='#'?'#474747':t==='@'?(hasAt?'#7795b3':'#989898'):t==='&'?(hasAnd?'#b79672':'#989898'):'#888';
+      ctx.fillText(t,x*CELL+CELL/2,y*CELL+CELL/2+1);
+    }
+    ctx.globalAlpha=1;
+    // Breathe on the next unlocked gate so the player spots where to explore.
+    const gate=state.unlocks.has('&')?'&':state.unlocks.has('@')?'@':null;
+    if(gate){
+      ctx.save();ctx.textAlign='center';ctx.textBaseline='middle';ctx.font='19px Consolas, "Courier New", monospace';
+      for(let y=0;y<H;y++)for(let x=0;x<W;x++)if(tile(x,y)===gate&&state.revealed[idx(x,y)]){
+        const a=.12+.12*(.5+.5*Math.sin(now/270));
+        ctx.fillStyle=gate==='@'?'rgba(66,113,150,'+a+')':'rgba(152,108,71,'+a+')';
+        ctx.beginPath();ctx.arc((x+.5)*CELL,(y+.5)*CELL,12,0,Math.PI*2);ctx.fill();
+      }
+      ctx.restore();
+    }
+    // Player-written type fades as its eight-second lifetime runs out.
+    for(const wall of state.walls){
+      const remain=Math.max(0,(wall.until-now)/8000),cx=(wall.x+.5)*CELL,cy=(wall.y+.5)*CELL;
+      ctx.save();ctx.globalAlpha=.28+.50*remain;ctx.strokeStyle='#474747';ctx.lineWidth=1;
+      ctx.strokeRect(cx-10,cy-10,20,20);ctx.restore();
+    }
+    renderTrail(now);
+    // A light dotted line in front of each enemy makes facing readable without UI clutter.
+    for(const e of state.enemies){if(!e.alive||e.zone>state.stage||!state.revealed[idx(e.x,e.y)])continue;
+      const d=dirs[e.dir];
+      ctx.fillStyle=e.alertUntil>now?'rgba(173,80,80,.21)':'rgba(70,70,70,.14)';
+      for(let j=1;j<=3;j++){const x=e.x+d.x*j,y=e.y+d.y*j;if(!valid(x,y)||tile(x,y)!==' '||!state.revealed[idx(x,y)])break;ctx.beginPath();ctx.arc((x+.5)*CELL,(y+.5)*CELL,1.6,0,Math.PI*2);ctx.fill()}
+    }
+    for(const e of state.enemies){if(!e.alive||e.zone>state.stage||!state.revealed[idx(e.x,e.y)])continue;
+      const dt=Math.min(1,Math.max(0,(now-(e.movedAt||0))/120));
+      const ease=1-Math.pow(1-dt,3);
+      const cx=((e.prevX??e.x)+(e.x-(e.prevX??e.x))*ease+.5)*CELL;
+      const cy=((e.prevY??e.y)+(e.y-(e.prevY??e.y))*ease+.5)*CELL;
+      drawEnemyGlyph(cx,cy,e,now);
+      if(e.alertUntil>now){ctx.font='bold 13px Consolas,monospace';ctx.fillStyle='#a74c44';ctx.fillText('!',cx+13,cy-12)}
+      else if(e.goal&&e.seenUntil>now){ctx.font='12px Consolas,monospace';ctx.fillStyle='#708291';ctx.fillText('?',cx+13,cy-12)}
+    }
+    const anim=state.absorbEvent;
+    const t=anim?Math.min(1,Math.max(0,(now-anim.from)/290)):0;
+    const travel=anim?(.78*(1-Math.pow(1-t,3))):0;
+    const lerp=1-Math.pow(1-Math.min(1,Math.max(0,(now-p.movedAt)/105)),3);
+    const pcx=anim?(p.x+.5)*CELL+(anim.x-anim.ox)*CELL*travel:((p.prevX??p.x)+(p.x-(p.prevX??p.x))*lerp+.5)*CELL;
+    const pcy=anim?(p.y+.5)*CELL+(anim.y-anim.oy)*CELL*travel:((p.prevY??p.y)+(p.y-(p.prevY??p.y))*lerp+.5)*CELL;
+    drawPlayerEvolution(pcx,pcy,p.dir,now);
+    // The page lights up briefly when a character is absorbed.
+    if(now<state.flash){ctx.fillStyle='rgba(230,235,238,'+(0.16*(state.flash-now)/230)+')';ctx.fillRect(0,0,canvas.width,canvas.height)}
+    state.particles=state.particles.filter(o=>now-o.from<o.life);
+    for(const o of state.particles){const t=(now-o.from)/1000;ctx.globalAlpha=Math.max(0,1-(now-o.from)/o.life);ctx.fillStyle=o.ch==='@'?'#718fac':o.ch==='&'?'#c48b58':'#ad739f';ctx.beginPath();ctx.arc(o.x+o.vx*t,o.y+o.vy*t,2,0,Math.PI*2);ctx.fill()}ctx.globalAlpha=1;
+    ctx.restore();
+  }
+  function frame(now){
+    if(state.mode==='playing'){
+      updateWalls(now);
+      const interval=145/Math.min(1.55,1+state.kills*.07+(now<state.surgeUntil?.15:0));
+      if(state.held&&now-state.lastPlayerStep>interval)movePlayer(state.held,now);
+      for(const e of state.enemies){if(!e.alive||e.zone>state.stage||now<e.wake)continue;if(now-e.lastStep>=e.speed){e.lastStep=now;aiStep(e,now)}}
+    } else if(state.mode==='absorbing'&&state.absorbEvent){
+      if(now>=state.absorbEvent.until){
+        const target=state.enemies.find(e=>e.id===state.absorbEvent.enemyId&&e.alive);
+        const ev=state.absorbEvent;
+        state.absorbEvent=null;
+        if(target){state.player.prevX=ev.ox;state.player.prevY=ev.oy;state.player.movedAt=now-100;state.player.x=ev.x;state.player.y=ev.y;state.trail.push({x:ev.ox,y:ev.oy,from:now,dir:state.player.dir});finalizeAbsorb(target,now);reveal(now)}
+        else state.mode='playing';
+      }
+    }
+    if(state.toastUntil&&now>state.toastUntil){$('toast').classList.remove('show');state.toastUntil=0}
+    if(state.messageUntil!==Infinity&&now>state.messageUntil){state.messageUntil=Infinity;$('hint').textContent='뒤에서 흡수 → 벽 지우기 → SPACE로 + 벽 쓰기 → 우회 사냥'}
+    if(now-state.lastFrame>25){
+      const active=state.mode==='playing'&&now<state.comboUntil&&state.combo>1;
+      $('comboLabel').textContent=active?state.combo+'연속 사냥 · '+(now<state.surgeUntil?'속도 상승 중':'다음 사냥을 노려라'):'연속 흡수 없음';
+      $('comboFill').style.width=active?Math.max(0,100*(state.comboUntil-now)/5000)+'%':'0%';
+      render(now);state.lastFrame=now
+    }
+    requestAnimationFrame(frame)
+  }
+  // Small deterministic hook for local automated smoke tests.
+  window.__TEXT_HUNTER_TEST__={snapshot:()=>({mode:state.mode,x:state.player.x,y:state.player.y,dir:state.player.dir,kills:state.kills,stage:state.stage,absorb:state.absorbEvent?{...state.absorbEvent}:null,skin:state.skin,ink:state.ink,walls:state.walls.map(w=>({x:w.x,y:w.y})),overview:state.overview,combo:state.combo,bestCombo:state.bestCombo,absorbed:state.absorbed.map(a=>a.ch),unlocks:[...state.unlocks],enemies:state.enemies.filter(e=>e.alive).map(e=>({ch:e.ch,x:e.x,y:e.y,dir:e.dir,zone:e.zone,style:e.style,goal:e.goal})),map:state.map.map(r=>r.join(''))}),move:dir=>movePlayer(dir),reset:()=>buildMap()};
+  buildMap();openDialog('intro');requestAnimationFrame(frame);
+})();
+</script>
+</body>
+</html>
